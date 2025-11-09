@@ -1,11 +1,8 @@
 #include <cstdint>
 #include <vector>
+#include "Side.h"
+#include "Alias.h"
 
-using OrderId = std::uint64_t;
-using Price = std::int32_t;
-using Quantity = std::uint32_t;
-
-enum class Side {BUY, SELL};
 
 class Order {
     Order(OrderId orderId, Quantity quantity, Price price, Side side)
@@ -15,10 +12,14 @@ class Order {
     side_(side),
     remaining_(quantity) {}
 
-    OrderId getOrderId() const { return orderId_;}
-    Quantity getRemaining() const { return quantity_;}
-    Price getLevel() const {return price_;}
-    Side getSide() const {return side_;}
+    const OrderId& getOrderId() const { return orderId_;}
+
+    const Quantity& getRemaining() const { return quantity_;}
+
+    const Price& getLevel() const {return price_;}
+
+    const Side& getSide() const {return side_;}
+
     bool isFilled() const { return remaining_ == 0;}
     void Fill(Quantity quantity){
        if (quantity > quantity_){
@@ -34,3 +35,5 @@ private:
     Side side_; //buy or sell
     Quantity remaining_;
 };
+
+using OrderPointer = std::shared_ptr<Order>;
