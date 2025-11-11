@@ -58,19 +58,17 @@ public:
         return data_;
     }
 
+    static const LevelInfo& getLevelInfo(Price price){
+        return data_[getPriceIndex(price)]; //calling getPrice index in ordere to scale price suitable for indices
+    }
+
     static size_t bestBidIndex() {
         return bestBidInd;
     }
 
-    static Price getBestBid() {
-        return bestBid_;
-    }
-
-
 private:
     static LevelVector data_;
-    //maybe instead of pointing to quantity, it should point to some struct containing the quantity and nextLevel;
-    static size_t bestBidInd;
+    static size_t bestBidInd; //if we instead save the bestBid into a different struc,
     static Price bestBid_;
 };
 
@@ -90,8 +88,9 @@ public:
         return bestAskInd;
     }
 
-    static Price getBestAsk() {
-        return bestAsk_;
+
+    static const LevelInfo& getLevelInfo(Price price){
+        return data_[getPriceIndex(price)]; //calling getPrice index in ordere to scale price suitable for indices
     }
 
 private:

@@ -5,6 +5,8 @@
 
 
 class Order {
+
+public:
     Order(OrderId orderId, Quantity quantity, Price price, Side side)
     : orderId_(orderId),
     quantity_(quantity),
@@ -12,13 +14,13 @@ class Order {
     side_(side),
     remaining_(quantity) {}
 
-    const OrderId& getOrderId() const { return orderId_;}
+    const OrderId getOrderId() const { return orderId_;}
 
-    const Quantity& getRemaining() const { return quantity_;}
+    const Quantity getRemaining() const { return quantity_;}
 
-    const Price& getLevel() const {return price_;}
+    const Price getLevel() const {return price_;}
 
-    const Side& getSide() const {return side_;}
+    const Side getSide() const {return side_;}
 
     bool isFilled() const { return remaining_ == 0;}
     void Fill(Quantity quantity){
@@ -36,4 +38,4 @@ private:
     Quantity remaining_;
 };
 
-using OrderPointer = std::shared_ptr<Order>;
+using OrderPointer = std::unique_ptr<Order>;
