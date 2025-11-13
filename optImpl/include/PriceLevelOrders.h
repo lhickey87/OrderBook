@@ -11,9 +11,10 @@ struct PriceLevelOrders {
     PriceLevelOrders* nextPrice_;
     PriceLevelOrders* prevPrice_;
 
-    explicit PriceLevelOrders(Side side, Price price, PriceLevelOrders* nextPrice, PriceLevelOrders* prevPrice):
+    explicit PriceLevelOrders(Side side, Price price, Order* head, PriceLevelOrders* nextPrice, PriceLevelOrders* prevPrice):
         side_(side),
         price_(price),
+        headOrder(head),
         nextPrice_(nextPrice),
         prevPrice_(prevPrice) {}
 };
