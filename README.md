@@ -13,7 +13,7 @@ In order to squeeze as much performance as possible out of every component in th
 
 
 ## UML Design Overview
-![image](./Design/UMLdesign.png)
+![image](./Design/UMLdiagram.png)
 
 ## Relevant Materials
 - [When Nanoseconds Matter: Ultrafast Trading Systems in C++ - David Gross - CppCon 2024](https://www.youtube.com/watch?v=sX2nF1fW7kI&t=1994s)
