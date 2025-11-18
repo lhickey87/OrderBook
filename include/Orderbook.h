@@ -49,11 +49,14 @@ private:
 
     void addToPriceLevel(PriceLevelOrders* newLevel) noexcept {
 
+    }
 
+    size_t priceToIndex(Price price) const {
+        return price % MAXLEVELS;
     }
 
     PriceLevelOrders* getPriceLevel(Price price) const noexcept {
-        return priceLevelsMap.at(price);
+        return priceLevelsMap.at(priceToIndex(price));
     }
 
     //find price level
@@ -81,4 +84,7 @@ private:
         return remainingQuantity;
     }
 
+    void fillPassiveOrder(OrderId passiveOrder, Quantity quantity){}
+
+    void recordAggressiveOrder(OrderId aggressor, Price tradePrice, Quantity quantity){}
 };
