@@ -121,6 +121,61 @@ struct Message<MessageType::REDUCE_ORDER> {
     const OrderId orderId_;
     const Quantity cancelledShares;
     static Message parseMessage(const char* bufPtr){
-
     }
+};
+
+template<>
+struct Message<MessageType::DELETE_ORDER> {
+    Message(Time time, OrderId orderId)
+        : time_(time),
+          cancelOrderId(orderId){}
+    static constexpr uint16_t msgLength = 19;
+    const Time time_;
+    const OrderId cancelOrderId;
+    static Message parseMessage(const char* bufPtr){}
+};
+
+template<>
+struct Message<MessageType::REPLACE_ORDER> {
+    Message(Time time, OrderId oldOrder, OrderId newOrder,
+            Quantity quantity,Price price)
+            : time_(time),
+              oldOrderId(oldOrder),
+              newOrderId(newOrder),
+              numShares(quantity),
+              newPrice(price){}
+    static constexpr uint16_t msgLength = 35;
+    const Time time_;
+    const OrderId oldOrderId;
+    const OrderId newOrderId;
+    const Quantity numShares;
+    const Price newPrice;
+
+    static Message parseMessage(const char* bufPtr){
+    }
+};
+
+template<>
+struct Message<MessageType::TRADE> {
+    Message(Time time, OrderId orderId, Side side, Quantity quantity,
+        TickerId ticker,Price price, uint64_t matchNum)
+        : time_(time),
+          orderId_(orderId),
+          side_(side),
+          sharesMatched(quantity),
+          ticker_(ticker),
+          matchPrice(price),
+          matchNumber(matchNum){}
+    static constexpr uint16_t msgLength = 44;
+    const Time time_;
+    const OrderId orderId_;
+    const Side side_;
+    const Quantity sharesMatched;
+    const TickerId ticker_;
+    const Price matchPrice;
+    const uint64_t matchNumber;
+
+    static Message parseMessage(const char* bufPtr){
+    }
+
 };
