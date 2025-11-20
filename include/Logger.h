@@ -32,6 +32,8 @@ struct LogElement {
     } u_;
 };
 
+using LogQueue = LFQueue<LogElement>;
+
 class Logger {
 
 public:
@@ -39,8 +41,10 @@ public:
         file_name(fileName),
         logQueue_(1 << 20){
             file_.open(file_name);
+            if (!file_.is_open()){
+                //do
+            }
         }
-
 
 private:
     const std::string file_name;

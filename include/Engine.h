@@ -4,16 +4,14 @@
 #include <cstdint>
 #include <unordered_map>
 
-using LogQueue = LFQueue<LogElement>*;
-using MessageQueue = LFQueue<Message*>;
-
 
 class Engine {
 
 public:
-    explicit Engine(const LogQueue& logQueue) :
+    explicit Engine(LogQueue* logQueue) :
         messageQueue_(MAX_MESSAGES),
         logQueue_(logQueue) {}
+
 
     ~Engine() {
 
@@ -22,7 +20,7 @@ public:
     auto readMessage() {}
 
 private:
-    MessageQueue messageQueue_;
-    LogQueue logQueue_;
+    LFQueue<Message*> messageQueue_;
+    LogQueue* logQueue_;
     std::unordered_map<TickerId, Orderbook*> orderBookMap;
 };
