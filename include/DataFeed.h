@@ -1,16 +1,18 @@
 #include <fstream>
-#include <stdexcept>
 #include <string>
-#include <vector>
 #include <thread>
+#include "typedefs.h"
+#include "MemoryPool.h"
+#include "Message.h"
+#include "LFQueue.h"
 
-constexpr size_t BUFFER_SIZE = 1024*1024;
 
 class DataFeed {
 
 public:
-    explicit DataFeed(const std::string& fileName, size_t bufferSize):
-        rawBuffer_(bufferSize),
+    explicit DataFeed(MemoryPool<RawBuffer>* bufferPool, LFQueue<ReadBuffer>* bufferQueue, const std::string& fileName):
+        bufferPool_(bufferPool),
+        bufferQueue_(bufferQueue),
         readFile_(fileName, std::ios::binary)
         {
             if (!readFile_.is_open()){
@@ -18,13 +20,9 @@ public:
             }
         }
 
-    //still need to work out design of this
     //DataFeed should be entirely responsible for reading in buffers, and sending everything to ITCHParser to consume
     auto readBuffer(Parser& parser){
-        while (run_){
-            readFile_.read(rawBuffer_.data(),BUFFER_SIZE); //this should fead in BUFFER_SIZE number of bytes
-            //read in that number of bytes, we should make sure it's always
-        }
+        //here we need to read in the buffer, then incrememebt queue write index,
     }
 
     DataFeed() = delete;
@@ -33,10 +31,9 @@ public:
     DataFeed(const DataFeed&) = delete;
     DataFeed(DataFeed&&) = delete;
 private:
-    std::vector<char> rawBuffer_;
+    MemoryPool<RawBuffer>* bufferPool_;
+    LFQueue<ReadBuffer>* bufferQueue_;
     size_t fileLine;
     std::ifstream readFile_;
-    std::atomic<size_t> writeIndex;
     std::thread* readThread = nullptr;
-
 };

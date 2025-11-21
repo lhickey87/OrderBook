@@ -1,26 +1,35 @@
 #include "Logger.h"
-#include "Message.h"
 #include "Orderbook.h"
+#include "typedefs.h"
+#include "Message.h"
 #include <cstdint>
 #include <unordered_map>
 
 
+struct ReadBuffer;
+template<typename T> class LFQueue;
+
 class Engine {
 
 public:
-    explicit Engine(LogQueue* logQueue) :
-        messageQueue_(MAX_MESSAGES),
-        logQueue_(logQueue) {}
+    explicit Engine(MemoryPool<RawBuffer>* bufferPool,LogQueue* logQueue, LFQueue<ReadBuffer>* bufferQueue) :
+        bufferPool_(bufferPool),
+        logQueue_(logQueue),
+        bufferQueue_(bufferQueue)
+        {}
 
+    ~Engine() {}
 
-    ~Engine() {
+    auto readMessage();
 
-    }
+    auto handleBuffer(const ReadBuffer* bufPtr);
 
-    auto readMessage() {}
+    auto handleMessage(const char* message);
 
 private:
-    LFQueue<Message*> messageQueue_;
+    //we will need some sort of queue
+    MemoryPool<RawBuffer>* bufferPool_;
+    LFQueue<ReadBuffer>* bufferQueue_;
     LogQueue* logQueue_;
-    std::unordered_map<TickerId, Orderbook*> orderBookMap;
+    Orderbook* orderBook;
 };

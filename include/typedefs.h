@@ -1,8 +1,10 @@
 #pragma once
 #include <cstdint>
 #include <__stddef_size_t.h>
+#include <array>
 
 enum class Side {UNITIALIZED,BUY,SELL};
+constexpr size_t BUFFER_SIZE = 1024*1024;
 
 using Quantity = std::uint32_t;
 using Price = std::int64_t;
@@ -12,3 +14,11 @@ using TickerId = uint16_t;
 
 constexpr size_t MAXLEVELS = 1 << 10;
 constexpr size_t MAX_ORDERS = 1 << 20;
+
+
+using RawBuffer = std::array<char,BUFFER_SIZE>;
+
+struct ReadBuffer {
+    RawBuffer* buffer;
+    size_t size;
+};

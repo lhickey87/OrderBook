@@ -17,7 +17,7 @@ public:
         numElements_++;
     }
 
-    auto getReadIndex() noexcept {
+    auto getReadElement() const {
         return (Size() ? &buffer_[readIndex_] : nullptr);
     }
 
@@ -48,8 +48,6 @@ public:
 
 private:
     std::vector<T> buffer_;
-    char padding1_[64];
-    char padding2_[64];
     std::atomic<size_t> writeIndex_{0};
     std::atomic<size_t> readIndex_{0};
     std::atomic<size_t> numElements_{0};

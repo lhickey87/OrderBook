@@ -12,7 +12,6 @@ enum class MessageType {
     DELETE_ORDER = 'D',
     REPLACE_ORDER = 'U',
     TRADE = 'P',
-    CROSS_TRADE = 'Q',
 };
 
 static auto get16(const char* memPtr){
@@ -68,7 +67,7 @@ struct Message<MessageType::ADD_ORDER> {
 
 template<>
 struct Message<MessageType::ADD_ORDER_MPID> {
-    static constexpr uint16_t msgLength = 40;
+    static constexpr uint8_t msgLength = 40;
     static Message parseMessage;
 };
 
@@ -177,5 +176,4 @@ struct Message<MessageType::TRADE> {
 
     static Message parseMessage(const char* bufPtr){
     }
-
 };

@@ -8,7 +8,9 @@ public:
 
     //explicit MessageParser()
 
-    auto consume(const char* data, size_t size);
+    auto consume(const char* data, size_t size){
+
+    }
 
     MessageParser() = delete;
     MessageParser(const MessageParser&) = delete;

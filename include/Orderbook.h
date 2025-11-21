@@ -10,9 +10,11 @@ public:
 
     //private API's such as priceCrosses -> Match, addToPriceLevel, addOrder will all be called from this public method
     void add(OrderId orderId, Side side, Price price, Quantity quantity);
-    void cancel(OrderId orderId); //cancel from order's hashmap by setting to nullptr
+    void deleteOrder(OrderId orderId); //cancel from order's hashmap by setting to nullptr
     void recordAggressiveOrder(OrderId orderId, Price price, Quantity quantity);
-    void fillPassiveOrder(OrderId orderId, Quantity quantity);
+    void fillPassiveOrder(OrderId orderId, Quantity quantity, bool withPrice);
+    void reduceOrder(OrderId orderId, Quantity cancelled);
+    void modifyOrder(OrderId oldOrderId, OrderId newOrderId, Price newPrice, Quantity quantity);
 
     //telling compiler not to generate any special member funtionms
    //Orderbook() = delete;
