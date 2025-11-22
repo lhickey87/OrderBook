@@ -22,9 +22,9 @@ public:
 
     auto readMessage();
 
-    auto handleBuffer(const ReadBuffer* bufPtr);
 
     auto handleMessage(const char* message);
+    auto handleBuffer(const ReadBuffer* bufPtr);
 
 private:
     //we will need some sort of queue

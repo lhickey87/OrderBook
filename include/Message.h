@@ -63,13 +63,15 @@ struct Message<MessageType::ADD_ORDER> {
     static Message parseMessage(const char* msgPtr){
     }
 };
+using AddOrderMessage = Message<MessageType::ADD_ORDER>;
 
 
 template<>
 struct Message<MessageType::ADD_ORDER_MPID> {
     static constexpr uint8_t msgLength = 40;
-    static Message parseMessage;
+    static Message parseMessage(const char* bufPtr){}
 };
+using IdAddOrderMessage = Message<MessageType::ADD_ORDER_MPID>;
 
 template<>
 struct Message<MessageType::EXECUTE_ORDER> {
@@ -88,6 +90,7 @@ struct Message<MessageType::EXECUTE_ORDER> {
     static Message parseMessage(const char* bufPtr){
     }
 };
+using ExecuteOrderMessage = Message<MessageType::EXECUTE_ORDER>;
 
 template<>
 struct Message<MessageType::EXECUTE_ORDER_WITH_PRICE> {
@@ -108,6 +111,8 @@ struct Message<MessageType::EXECUTE_ORDER_WITH_PRICE> {
     }
 };
 
+using ExecutePriceOrderMessage = Message<MessageType::EXECUTE_ORDER_WITH_PRICE>;
+
 template<>
 struct Message<MessageType::REDUCE_ORDER> {
 
@@ -122,6 +127,7 @@ struct Message<MessageType::REDUCE_ORDER> {
     static Message parseMessage(const char* bufPtr){
     }
 };
+using ReduceOrderMessage = Message<MessageType::REDUCE_ORDER>;
 
 template<>
 struct Message<MessageType::DELETE_ORDER> {
@@ -133,6 +139,7 @@ struct Message<MessageType::DELETE_ORDER> {
     const OrderId cancelOrderId;
     static Message parseMessage(const char* bufPtr){}
 };
+using DeleteOrderMessage = Message<MessageType::DELETE_ORDER>;
 
 template<>
 struct Message<MessageType::REPLACE_ORDER> {
@@ -153,6 +160,7 @@ struct Message<MessageType::REPLACE_ORDER> {
     static Message parseMessage(const char* bufPtr){
     }
 };
+using ReplaceOrderMessage = Message<MessageType::REPLACE_ORDER>;
 
 template<>
 struct Message<MessageType::TRADE> {
@@ -177,3 +185,5 @@ struct Message<MessageType::TRADE> {
     static Message parseMessage(const char* bufPtr){
     }
 };
+
+using TradeMessage = Message<MessageType::TRADE>;
