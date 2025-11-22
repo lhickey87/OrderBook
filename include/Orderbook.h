@@ -15,7 +15,6 @@ public:
     void fillPassiveOrder(OrderId orderId, Quantity quantity, bool withPrice);
     void reduceOrder(OrderId orderId, Quantity cancelled);
     void modifyOrder(OrderId oldOrderId, OrderId newOrderId, Price newPrice, Quantity quantity);
-
     //telling compiler not to generate any special member funtionms
    //Orderbook() = delete;
     Orderbook(Orderbook&&) = delete;

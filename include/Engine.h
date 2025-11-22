@@ -9,10 +9,13 @@
 struct ReadBuffer;
 template<typename T> class LFQueue;
 
+using BufferQueue = LFQueue<ReadBuffer>;
+using LogQueue = LFQueue<LogElement>;
+
 class Engine {
 
 public:
-    explicit Engine(MemoryPool<RawBuffer>* bufferPool,LogQueue* logQueue, LFQueue<ReadBuffer>* bufferQueue) :
+    explicit Engine(MemoryPool<RawBuffer>* bufferPool,LogQueue* logQueue, BufferQueue* bufferQueue) :
         bufferPool_(bufferPool),
         logQueue_(logQueue),
         bufferQueue_(bufferQueue)
@@ -21,15 +24,14 @@ public:
     ~Engine() {}
 
     auto readMessage();
-
-
-    auto handleMessage(const char* message);
+    void handleMessage(const char* message);
     auto handleBuffer(const ReadBuffer* bufPtr);
 
 private:
     //we will need some sort of queue
+    char* remainingbuffer;
     MemoryPool<RawBuffer>* bufferPool_;
-    LFQueue<ReadBuffer>* bufferQueue_;
+    BufferQueue* bufferQueue_;
     LogQueue* logQueue_;
     Orderbook* orderBook;
 };
