@@ -17,6 +17,17 @@ public:
     void modifyOrder(OrderId oldOrderId, OrderId newOrderId, Price newPrice, Quantity quantity);
     //telling compiler not to generate any special member funtionms
    //Orderbook() = delete;
+
+    Order* getOrder(OrderId orderId) noexcept {return orderMap.at(orderId);}
+
+    PriceLevelOrders* getPriceLevel(Price price) const noexcept {
+        return priceLevelsMap.at(priceToIndex(price));
+    }
+
+    PriceLevelOrders* getSide(Side side) const {
+        return (side == Side::BUY) ? bids_ : asks_;
+    }
+
     Orderbook(Orderbook&&) = delete;
     Orderbook(const Orderbook&) = delete;
     Orderbook& operator=(const Orderbook&) = delete;
@@ -28,8 +39,10 @@ private:
     MemoryPool<PriceLevelOrders*> priceLevelPool;
     PriceLevelOrders* bids_ = nullptr;
     PriceLevelOrders* asks_ = nullptr;
-    std::vector<Order*> orderMap;
-    std::vector<PriceLevelOrders*> priceLevelsMap;
+    //std::vector<Order*> orderMap;
+    //std::vector<PriceLevelOrders*> priceLevelsMap;
+    std::unordered_map<OrderId, Order*> orderMap;
+    std::unordered_map<Price, PriceLevelOrders*> priceLevelsMap;
     size_t nextOrderId = 1;
 
     //if using particular exchange we may have to implement exchanged specific logic
@@ -91,7 +104,7 @@ private:
         insertLevelBefore(currentPriceLevel, newLevel);
     }
 
-    void insertLevelBefore(PriceLevelOrders* currentLevel, PriceLevelOrders* newLevel){
+    void insertLevelBefore(PriceLevelOrders* currentLevel, PriceLevelOrders* newLevel) noexcept {
         auto prev = currentLevel->prevPrice_;
 
         newLevel->nextPrice_ = currentLevel;
@@ -101,7 +114,7 @@ private:
         prev->nextPrice_ = newLevel;
     }
 
-    bool priceLevelCompare(Side side, Price currentPrice, Price newLevelPrice){
+    bool priceLevelCompare(Side side, Price currentPrice, Price newLevelPrice) noexcept {
         if (side == Side::BUY){
             return currentPrice < newLevelPrice;
         } else {
@@ -113,14 +126,7 @@ private:
         return price % MAXLEVELS;
     }
 
-    PriceLevelOrders* getSide(Side side) const {
-        return (side == Side::BUY) ? bids_ : asks_;
-    }
 
-    PriceLevelOrders* getPriceLevel(Price price) const noexcept {
-        return priceLevelsMap.at(priceToIndex(price));
-    }
-
-    void removePriceLevel(Price price) noexcept {}
+    void removePriceLevel(Price price, Side side) noexcept {}
 
 };

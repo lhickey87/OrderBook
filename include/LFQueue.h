@@ -48,7 +48,7 @@ public:
 
 private:
     std::vector<T> buffer_;
-    std::atomic<size_t> writeIndex_{0};
-    std::atomic<size_t> readIndex_{0};
-    std::atomic<size_t> numElements_{0};
+    alignas(64) std::atomic<size_t> writeIndex_{0};
+    alignas(64) std::atomic<size_t> readIndex_{0};
+    alignas(64) std::atomic<size_t> numElements_{0};
 };

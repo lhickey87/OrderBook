@@ -19,7 +19,6 @@ auto Engine::handleBuffer(const ReadBuffer* bufPtr) {
 
         length = get16bit(buffer);
         if (length > remainingBytes) [[unlikely]]{
-            //will have to call std::memcpy
             std::memcpy(&remainingbuffer, buffer, remainingBytes);
             //will need to figure out how to handle the spliced message
             break;
@@ -56,14 +55,14 @@ void Engine::handleMessage(const char* message){
 
         case(MessageType::EXECUTE_ORDER): {
             auto msg = ExecMessage::parseMessage(message);
-            orderBook->fillPassiveOrder(msg.orderId_,msg.numShares, false);
+            orderBook->fillPassiveOrder(msg.orderId_,msg.numShares, WITHOUT_PRICE);
             message += ExecMessage::msgLength;
             break;
         }
 
         case(MessageType::EXECUTE_ORDER_WITH_PRICE): {
             auto msg = ExecPriceMessage::parseMessage(message);
-            orderBook->fillPassiveOrder(msg.orderId_,msg.numShares, true);
+            orderBook->fillPassiveOrder(msg.orderId_,msg.numShares, WITH_PRICE);
             message += ExecPriceMessage::msgLength;
             break;
         }

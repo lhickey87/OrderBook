@@ -15,8 +15,8 @@ using TickerId = uint16_t;
 constexpr size_t MAXLEVELS = 1 << 10;
 constexpr size_t MAX_ORDERS = 1 << 20;
 
-enum class EXEC {WITH_PRICE, WITHOUT_PRICE};
-
+constexpr bool WITH_PRICE = true;
+constexpr bool WITHOUT_PRICE = false;
 
 using RawBuffer = std::array<char,BUFFER_SIZE>;
 

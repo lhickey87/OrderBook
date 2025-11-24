@@ -17,7 +17,6 @@ class Engine {
 public:
     explicit Engine(MemoryPool<RawBuffer>* bufferPool,LogQueue* logQueue, BufferQueue* bufferQueue) :
         bufferPool_(bufferPool),
-        logQueue_(logQueue),
         bufferQueue_(bufferQueue)
         {}
 
@@ -33,5 +32,6 @@ private:
     MemoryPool<RawBuffer>* bufferPool_;
     BufferQueue* bufferQueue_;
     LogQueue* logQueue_;
+    std::thread* engineThread;
     Orderbook* orderBook;
 };

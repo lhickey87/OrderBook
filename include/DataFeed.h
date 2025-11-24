@@ -15,14 +15,11 @@ public:
         bufferQueue_(bufferQueue),
         readFile_(fileName, std::ios::binary)
         {
-            if (!readFile_.is_open()){
-                throw std::runtime_error("read file not open"):
-            }
         }
 
     //DataFeed should be entirely responsible for reading in buffers, and sending everything to ITCHParser to consume
-    auto readBuffer(Parser& parser){
-        //here we need to read in the buffer, then incrememebt queue write index,
+    auto readBuffer(){
+
     }
 
     DataFeed() = delete;
