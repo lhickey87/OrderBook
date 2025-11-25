@@ -15,8 +15,10 @@ using LogQueue = LFQueue<LogElement>;
 class Engine {
 
 public:
-    explicit Engine(MemoryPool<RawBuffer>* bufferPool,LogQueue* logQueue, BufferQueue* bufferQueue) :
+    explicit Engine(Orderbook* orderbook, MemoryPool<RawBuffer>* bufferPool,LogQueue* logQueue, BufferQueue* bufferQueue) :
+        orderBook_(orderbook),
         bufferPool_(bufferPool),
+        logQueue_(logQueue),
         bufferQueue_(bufferQueue)
         {}
 
@@ -28,9 +30,9 @@ public:
 
 private:
     //we will need some sort of queue
+    Orderbook* orderBook_;
     MemoryPool<RawBuffer>* bufferPool_;
     BufferQueue* bufferQueue_;
     LogQueue* logQueue_;
     std::thread* engineThread;
-    Orderbook* orderBook;
 };

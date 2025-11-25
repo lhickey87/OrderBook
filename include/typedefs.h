@@ -7,6 +7,9 @@ enum class Side {UNITIALIZED,BUY,SELL};
 //adding 40 bytes to allow for potential leftover from spliced message at end of buffer
 constexpr size_t BUFFER_SIZE = 1024*1024+40;
 
+//arbitrary for now, our current data file is 8Gb so this will hold enough
+constexpr size_t MAX_BUFFERS = 10*1024;
+
 using Quantity = std::uint32_t;
 using Price = std::int64_t;
 using Time = uint64_t;

@@ -39,8 +39,7 @@ private:
     MemoryPool<PriceLevelOrders*> priceLevelPool;
     PriceLevelOrders* bids_ = nullptr;
     PriceLevelOrders* asks_ = nullptr;
-    //std::vector<Order*> orderMap;
-    //std::vector<PriceLevelOrders*> priceLevelsMap;
+
     std::unordered_map<OrderId, Order*> orderMap;
     std::unordered_map<Price, PriceLevelOrders*> priceLevelsMap;
     size_t nextOrderId = 1;
