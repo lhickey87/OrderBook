@@ -29,7 +29,6 @@ public:
     //DataFeed should be entirely responsible for reading in buffers, and sending everything to ITCHParser to consume
     auto readBuffer();
     size_t getBoundary(char* messagebuffer, size_t validBytes);
-    void getLastCompleteMessage();
 
     DataFeed() = delete;
     DataFeed& operator=(const DataFeed&) = delete;

@@ -108,7 +108,6 @@ struct Message<MessageType::EXECUTE_ORDER> {
 };
 using ExecMessage = Message<MessageType::EXECUTE_ORDER>;
 
-using ExecPriceMessage = Message<MessageType::EXECUTE_ORDER_WITH_PRICE>;
 
 template<>
 struct Message<MessageType::EXECUTE_ORDER_WITH_PRICE> {
@@ -126,13 +125,13 @@ struct Message<MessageType::EXECUTE_ORDER_WITH_PRICE> {
     const uint64_t matchNumber;
     const Price execPrice;
     static Message parseMessage(const char* bufPtr){
-        return ExecPriceMessage(getTime(bufPtr+1), getOrderId(bufPtr+5),getQuantity(bufPtr+13),
-                                get64bit(bufPtr+17), getPrice(bufPtr+26));
+        return Message<MessageType::EXECUTE_ORDER_WITH_PRICE>(getTime(bufPtr+1), getOrderId(bufPtr+5),getQuantity(bufPtr+13),
+                                                              get64bit(bufPtr+17), getPrice(bufPtr+26));
     }
 };
 
+using ExecPriceMessage = Message<MessageType::EXECUTE_ORDER_WITH_PRICE>;
 
-using ReduceOrderMessage = Message<MessageType::REDUCE_ORDER>;
 template<>
 struct Message<MessageType::REDUCE_ORDER> {
 
@@ -145,11 +144,12 @@ struct Message<MessageType::REDUCE_ORDER> {
     const OrderId orderId_;
     const Quantity cancelledShares;
     static Message parseMessage(const char* bufPtr){
-        return ReduceOrderMessage(getTime(bufPtr+1),getOrderId(bufPtr+5),getQuantity(bufPtr+13));
+        return Message<MessageType::REDUCE_ORDER>(getTime(bufPtr+1),getOrderId(bufPtr+5),getQuantity(bufPtr+13));
     }
 };
 
-using DeleteMessage =Message<MessageType::DELETE_ORDER>;
+using ReduceOrderMessage = Message<MessageType::REDUCE_ORDER>;
+
 template<>
 struct Message<MessageType::DELETE_ORDER> {
     Message(Time time, OrderId orderId)
@@ -159,11 +159,11 @@ struct Message<MessageType::DELETE_ORDER> {
     const Time time_;
     const OrderId cancelOrderId;
     static Message parseMessage(const char* bufPtr){
-        return DeleteMessage(getTime(bufPtr+1),getOrderId(bufPtr+5));
+        return Message<MessageType::DELETE_ORDER>(getTime(bufPtr+1),getOrderId(bufPtr+5));
     }
 };
+using DeleteMessage =Message<MessageType::DELETE_ORDER>;
 
-using ReplaceMessage =Message<MessageType::REPLACE_ORDER>;
 template<>
 struct Message<MessageType::REPLACE_ORDER> {
     Message(Time time, OrderId oldOrder, OrderId newOrder,
@@ -181,12 +181,12 @@ struct Message<MessageType::REPLACE_ORDER> {
     const Price newPrice;
 
     static Message parseMessage(const char* bufPtr){
-        return ReplaceMessage(getTime(bufPtr+1),getOrderId(bufPtr+5),getOrderId(bufPtr+13),
+        return Message<MessageType::REPLACE_ORDER>(getTime(bufPtr+1),getOrderId(bufPtr+5),getOrderId(bufPtr+13),
                               getQuantity(bufPtr+21),getPrice(bufPtr+25));
     }
 };
+using ReplaceMessage =Message<MessageType::REPLACE_ORDER>;
 
-using TradeMessage = Message<MessageType::TRADE>;
 template<>
 struct Message<MessageType::TRADE> {
     Message(Time time, Quantity quantity,
@@ -204,7 +204,28 @@ struct Message<MessageType::TRADE> {
     const uint64_t matchNumber;
 
     static Message parseMessage(const char* bufPtr){
-        return TradeMessage(getTime(bufPtr+1), getQuantity(bufPtr+14), getTicker(bufPtr+18),
+        return Message<MessageType::TRADE>(getTime(bufPtr+1), getQuantity(bufPtr+14), getTicker(bufPtr+18),
             getPrice(bufPtr+26),get64bit(bufPtr+30));
     }
 };
+using TradeMessage = Message<MessageType::TRADE>;
+
+struct MessageLookup {
+    // We use a helper function to populate the array at Compile Time
+    static constexpr std::array<uint8_t, 256> create() {
+        std::array<uint8_t, 256> table = {}; // Initialize all to 0
+
+        table[static_cast<uint8_t>(MessageType::ADD_ORDER)] = AddOrderMessage::msgLength;
+        table[static_cast<uint8_t>(MessageType::ADD_ORDER_MPID)] = IdAddOrderMessage::msgLength;
+        table[static_cast<uint8_t>(MessageType::EXECUTE_ORDER)] = ExecMessage::msgLength;
+        table[static_cast<uint8_t>(MessageType::EXECUTE_ORDER_WITH_PRICE)] = ExecPriceMessage::msgLength;
+        table[static_cast<uint8_t>(MessageType::REDUCE_ORDER)] = ReduceOrderMessage::msgLength;
+        table[static_cast<uint8_t>(MessageType::DELETE_ORDER)] = DeleteMessage::msgLength;
+        table[static_cast<uint8_t>(MessageType::REPLACE_ORDER)] = ReplaceMessage::msgLength;
+        table[static_cast<uint8_t>(MessageType::TRADE)] = TradeMessage::msgLength;
+
+        return table;
+    }
+};
+
+static const auto MsgLengthMap = MessageLookup::create();

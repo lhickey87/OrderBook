@@ -17,7 +17,8 @@ auto DataFeed::readBuffer() {
 
         ssize_t bytesRead =::read(fd_,dataPtr+leftoverSize,bytesLeft);
         if (bytesRead == 0){
-            //?
+            bufferPool_->deallocate(buffer);
+            break;
         }
         size_t totalBytes = bytesRead+leftoverSize;
         size_t boundary = getBoundary(dataPtr,totalBytes); //this will return the address to stop at
@@ -33,9 +34,21 @@ auto DataFeed::readBuffer() {
         slot->size = boundary;
         bufferQueue_->incWriteIndex();
     }
-
 }
 
-size_t getBoundary(char* messageBuffer, size_t validBytes){
+//instead we have to use message Lentghs table
 
+size_t getBoundary(char* msgBuf, size_t validBytes){
+    //skip each and every message length, once messageLength> remaining, then from that exact byte we return
+    const auto LengthsMap = MsgLengthMap; //defined in message.h header
+    auto remaining = validBytes;
+
+    size_t msgLength = 0;
+    while (true){
+        msgLength = MsgLengthMap[*msgBuf];
+        if (msgLength > remaining) [[unlikely]] break;
+        remaining -= msgLength;
+        msgBuf += msgLength;
+    }
+    return validBytes - remaining;
 }
