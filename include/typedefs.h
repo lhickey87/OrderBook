@@ -4,7 +4,8 @@
 #include <array>
 
 enum class Side {UNITIALIZED,BUY,SELL};
-constexpr size_t BUFFER_SIZE = 1024*1024;
+//adding 40 bytes to allow for potential leftover from spliced message at end of buffer
+constexpr size_t BUFFER_SIZE = 1024*1024+40;
 
 using Quantity = std::uint32_t;
 using Price = std::int64_t;

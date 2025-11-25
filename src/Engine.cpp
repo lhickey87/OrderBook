@@ -1,17 +1,19 @@
 #include "../include/Engine.h"
 #include <cstring>
 
-
+//this would likely be in
 auto Engine::readMessage() {
 
     while (bufferQueue_->isEmpty()){
         std::this_thread::yield();
     }
 
-    const ReadBuffer* bufPtr = bufferQueue_->getReadElement();
+    ReadBuffer* bufPtr = bufferQueue_->getReadElement();
+    handleBuffer(bufPtr);
+    //what if we have leftover buffer
 }
 
-auto Engine::handleBuffer(const ReadBuffer* bufPtr) {
+void Engine::handleBuffer(char* remainingBuf, const ReadBuffer* bufPtr) {
     size_t remainingBytes = bufPtr->size;
     const char* buffer = bufPtr->buffer->data(); //this is the actual std::array of chars
     uint16_t length;

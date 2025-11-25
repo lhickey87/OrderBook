@@ -24,11 +24,10 @@ public:
 
     auto readMessage();
     void handleMessage(const char* message);
-    auto handleBuffer(const ReadBuffer* bufPtr);
+    void handleBuffer(char* remainingBuf,const ReadBuffer* bufPtr);
 
 private:
     //we will need some sort of queue
-    char* remainingbuffer;
     MemoryPool<RawBuffer>* bufferPool_;
     BufferQueue* bufferQueue_;
     LogQueue* logQueue_;
