@@ -9,6 +9,7 @@ void Orderbook::add(OrderId orderId, Side side, Price price, Quantity quantity){
     }
     orderMap[newOrder->orderId_] = newOrder;
     ++nextOrderId;
+    //logger_->log("{} {}",__FILE__, __LINE__,__FUNCTION__,getCurrentTimeStr());
     addOrder(newOrder);
 }
 
@@ -46,5 +47,9 @@ void Orderbook::reduceOrder(OrderId orderId, Quantity cancelled){
 }
 
 void Orderbook::modifyOrder(OrderId oldOrderId, OrderId newOrderId, Price newPrice, Quantity quantity){
-
+    auto oldOrder = getOrder(oldOrderId);
+    Side side = oldOrder->side_;
+    deleteOrder(oldOrderId);
+    oldOrder = nullptr;
+    add(newOrderId,side,newPrice,quantity);
 }

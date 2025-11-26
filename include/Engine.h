@@ -26,7 +26,7 @@ public:
     ~Engine() {}
 
     auto readMessage();
-    void handleMessage(const char* message);
+    void handleMessage(const char* message, MessageType type);
     void handleBuffer(const ReadBuffer* bufPtr);
 
 private:
@@ -35,6 +35,6 @@ private:
     Orderbook* orderBook_;
     MemoryPool<RawBuffer>* bufferPool_;
     BufferQueue* bufferQueue_;
-    LogQueue* logQueue_;
+    LFQueue<std::string>* logQueue_;
     std::thread* engineThread;
 };

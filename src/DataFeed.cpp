@@ -7,7 +7,7 @@ auto DataFeed::readBuffer() {
         //will do reading here
         RawBuffer* buffer = bufferPool_->Allocate(); //should allocate the char array
         auto dataPtr = buffer->data();
-        //we would have previouslyt
+        //we would have previously
         if (leftoverSize > 0){
             std::memcpy(leftover_.data(),dataPtr,leftoverSize);
         }

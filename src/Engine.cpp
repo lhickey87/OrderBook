@@ -16,77 +16,77 @@ auto Engine::readMessage() {
 void Engine::handleBuffer(const ReadBuffer* bufPtr) {
     size_t remainingBytes = bufPtr->size;
     const char* buffer = bufPtr->buffer->data(); //this is the actual std::array of chars
-    uint16_t length;
+    uint8_t length;
     while (remainingBytes > 0){
-        // may not actually be neccessary to hgave a handleMessage method
-        length = get16bit(buffer);
+        // first byte here will be the type of the message, can use this to get it's length
+        length = MsgLengthMap[*buffer];
         if (length > remainingBytes) [[unlikely]]{
             std::memcpy(&splicedMessage, buffer, remainingBytes);
-            //will need to figure out how to handle the spliced message
             break;
         } //otherwise we can handle the Message
-        handleMessage(buffer);
+
+        handleMessage(buffer, MessageType(*buffer));
         remainingBytes -= length;
     }
 }
 
 //could assume that we call handleMessage after getting the length of the message
-void Engine::handleMessage(const char* message){
-    const MessageType msgType = MessageType(*message); //points to 3rd bit containing message Type
-    switch (msgType){
+void Engine::handleMessage(const char* message,MessageType type){
+    switch (type){
         case (MessageType::ADD_ORDER): {
             auto msg = AddOrderMessage::parseMessage(message);
             orderBook_->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_);
-            //there will also be a timestamp which we would pass to our logger queue
-            message += AddOrderMessage::msgLength;
+            message += AddOrderMessage::LENGTH;
             break;
         }
 
         case(MessageType::ADD_ORDER_MPID): {
             auto msg = IdAddOrderMessage::parseMessage(message);
-            message += IdAddOrderMessage::msgLength;
+            //orderBook_->add(msg.);
+            message += AddOrderMessage::LENGTH;
             break;
         }
 
         case(MessageType::DELETE_ORDER): {
             auto msg = DeleteMessage::parseMessage(message);
             orderBook_->deleteOrder(msg.cancelOrderId);
-            message += DeleteMessage::msgLength;
+            message += DeleteMessage::LENGTH;
             break;
         }
 
         case(MessageType::EXECUTE_ORDER): {
             auto msg = ExecMessage::parseMessage(message);
             orderBook_->fillPassiveOrder(msg.orderId_,msg.numShares, WITHOUT_PRICE);
-            message += ExecMessage::msgLength;
+            message += ExecMessage::LENGTH;
             break;
         }
 
         case(MessageType::EXECUTE_ORDER_WITH_PRICE): {
             auto msg = ExecPriceMessage::parseMessage(message);
             orderBook_->fillPassiveOrder(msg.orderId_,msg.numShares, WITH_PRICE);
-            message += ExecPriceMessage::msgLength;
+            message += ExecPriceMessage::LENGTH;
             break;
         }
 
         case(MessageType::REDUCE_ORDER): {
             auto msg = ReduceOrderMessage::parseMessage(message);
             orderBook_->reduceOrder(msg.orderId_,msg.cancelledShares);
-            message += ReduceOrderMessage::msgLength;
+            message += ReduceOrderMessage::LENGTH;
             break;
         }
 
         case(MessageType::REPLACE_ORDER): {
             auto msg = ReplaceMessage::parseMessage(message);
             orderBook_->modifyOrder(msg.oldOrderId, msg.newOrderId,msg.newPrice,msg.numShares);
-            message += ReplaceMessage::msgLength;
+            message += ReduceOrderMessage::LENGTH;
             break;
         }
 
         case(MessageType::TRADE): {
             auto msg = TradeMessage::parseMessage(message);
             //have to LOG this trade, a message for Order Executed would have been processed prior to this
-            message += TradeMessage::msgLength;
+            //logger.log
+            message += TradeMessage::LENGTH;
             break;
         }
     }
