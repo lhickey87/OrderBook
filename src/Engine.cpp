@@ -8,20 +8,20 @@ auto Engine::readMessage() {
         std::this_thread::yield();
     }
 
-    ReadBuffer* bufPtr = bufferQueue_->getReadElement();
+    auto bufPtr = bufferQueue_->getReadElement();
     handleBuffer(bufPtr);
     //what if we have leftover buffer
 }
 
-void Engine::handleBuffer(char* remainingBuf, const ReadBuffer* bufPtr) {
+void Engine::handleBuffer(const ReadBuffer* bufPtr) {
     size_t remainingBytes = bufPtr->size;
     const char* buffer = bufPtr->buffer->data(); //this is the actual std::array of chars
     uint16_t length;
     while (remainingBytes > 0){
-
+        // may not actually be neccessary to hgave a handleMessage method
         length = get16bit(buffer);
         if (length > remainingBytes) [[unlikely]]{
-            std::memcpy(&remainingbuffer, buffer, remainingBytes);
+            std::memcpy(&splicedMessage, buffer, remainingBytes);
             //will need to figure out how to handle the spliced message
             break;
         } //otherwise we can handle the Message
@@ -36,7 +36,7 @@ void Engine::handleMessage(const char* message){
     switch (msgType){
         case (MessageType::ADD_ORDER): {
             auto msg = AddOrderMessage::parseMessage(message);
-            orderBook->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_);
+            orderBook_->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_);
             //there will also be a timestamp which we would pass to our logger queue
             message += AddOrderMessage::msgLength;
             break;
@@ -50,35 +50,35 @@ void Engine::handleMessage(const char* message){
 
         case(MessageType::DELETE_ORDER): {
             auto msg = DeleteMessage::parseMessage(message);
-            orderBook->deleteOrder(msg.cancelOrderId);
+            orderBook_->deleteOrder(msg.cancelOrderId);
             message += DeleteMessage::msgLength;
             break;
         }
 
         case(MessageType::EXECUTE_ORDER): {
             auto msg = ExecMessage::parseMessage(message);
-            orderBook->fillPassiveOrder(msg.orderId_,msg.numShares, WITHOUT_PRICE);
+            orderBook_->fillPassiveOrder(msg.orderId_,msg.numShares, WITHOUT_PRICE);
             message += ExecMessage::msgLength;
             break;
         }
 
         case(MessageType::EXECUTE_ORDER_WITH_PRICE): {
             auto msg = ExecPriceMessage::parseMessage(message);
-            orderBook->fillPassiveOrder(msg.orderId_,msg.numShares, WITH_PRICE);
+            orderBook_->fillPassiveOrder(msg.orderId_,msg.numShares, WITH_PRICE);
             message += ExecPriceMessage::msgLength;
             break;
         }
 
         case(MessageType::REDUCE_ORDER): {
             auto msg = ReduceOrderMessage::parseMessage(message);
-            orderBook->reduceOrder(msg.orderId_,msg.cancelledShares);
+            orderBook_->reduceOrder(msg.orderId_,msg.cancelledShares);
             message += ReduceOrderMessage::msgLength;
             break;
         }
 
         case(MessageType::REPLACE_ORDER): {
             auto msg = ReplaceMessage::parseMessage(message);
-            orderBook->modifyOrder(msg.oldOrderId, msg.newOrderId,msg.newPrice,msg.numShares);
+            orderBook_->modifyOrder(msg.oldOrderId, msg.newOrderId,msg.newPrice,msg.numShares);
             message += ReplaceMessage::msgLength;
             break;
         }
