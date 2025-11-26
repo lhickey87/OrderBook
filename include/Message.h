@@ -59,7 +59,7 @@ struct Message<MessageType::ADD_ORDER> {
           orderQuantity_(quantity),
           stockTicker_(ticker),
           price_(price) {}
-    static constexpr uint16_t msgLength = 36;
+    static constexpr uint16_t LENGTH = 36;
     const Time timeStamp_; //4 bytes
     const OrderId orderId_; //8 bytes
     const Side side_; //1 byte
@@ -79,7 +79,7 @@ template<>
 struct Message<MessageType::ADD_ORDER_MPID> {
 
     Message(const AddOrderMessage baseMsg, uint32_t clientId) : base(baseMsg), clientId_(clientId){}
-    static constexpr uint8_t msgLength = 40;
+    static constexpr uint16_t LENGTH = 40;
     const AddOrderMessage base;
     const uint32_t clientId_;
     static Message parseMessage(const char* bufPtr){
@@ -96,7 +96,7 @@ struct Message<MessageType::EXECUTE_ORDER> {
           numShares(quantity),
           matchNumber(matchNum){}
 
-    static constexpr uint16_t msgLength = 31;
+    static constexpr uint16_t LENGTH = 31;
     const Time time_;
     const OrderId orderId_;
     const Quantity numShares;
@@ -118,7 +118,7 @@ struct Message<MessageType::EXECUTE_ORDER_WITH_PRICE> {
               numShares(quantity),
               matchNumber(matchNum),
               execPrice(price){}
-    static constexpr uint16_t msgLength = 36;
+    static constexpr uint16_t LENGTH = 36;
     const Time time_;
     const OrderId orderId_;
     const Quantity numShares;
@@ -139,7 +139,7 @@ struct Message<MessageType::REDUCE_ORDER> {
         : time_(time),
           orderId_(orderId),
           cancelledShares(quantity){}
-    static constexpr uint16_t msgLength = 23;
+    static constexpr uint16_t LENGTH = 23;
     const Time time_;
     const OrderId orderId_;
     const Quantity cancelledShares;
@@ -155,14 +155,14 @@ struct Message<MessageType::DELETE_ORDER> {
     Message(Time time, OrderId orderId)
         : time_(time),
           cancelOrderId(orderId){}
-    static constexpr uint16_t msgLength = 19;
+    static constexpr uint16_t LENGTH = 19;
     const Time time_;
     const OrderId cancelOrderId;
     static Message parseMessage(const char* bufPtr){
         return Message<MessageType::DELETE_ORDER>(getTime(bufPtr+1),getOrderId(bufPtr+5));
     }
 };
-using DeleteMessage =Message<MessageType::DELETE_ORDER>;
+using DeleteMessage = Message<MessageType::DELETE_ORDER>;
 
 template<>
 struct Message<MessageType::REPLACE_ORDER> {
@@ -173,7 +173,7 @@ struct Message<MessageType::REPLACE_ORDER> {
               newOrderId(newOrder),
               numShares(quantity),
               newPrice(price){}
-    static constexpr uint16_t msgLength = 35;
+    static constexpr uint16_t LENGTH = 35;
     const Time time_;
     const OrderId oldOrderId;
     const OrderId newOrderId;
@@ -196,7 +196,7 @@ struct Message<MessageType::TRADE> {
           ticker_(ticker),
           matchPrice(price),
           matchNumber(matchNum){}
-    static constexpr uint16_t msgLength = 44;
+    static constexpr uint16_t LENGTH = 44;
     const Time time_;
     const Quantity sharesMatched;
     const TickerId ticker_;
@@ -215,14 +215,14 @@ struct MessageLookup {
     static constexpr std::array<uint8_t, 256> create() {
         std::array<uint8_t, 256> table = {}; // Initialize all to 0
 
-        table[static_cast<uint8_t>(MessageType::ADD_ORDER)] = AddOrderMessage::msgLength;
-        table[static_cast<uint8_t>(MessageType::ADD_ORDER_MPID)] = IdAddOrderMessage::msgLength;
-        table[static_cast<uint8_t>(MessageType::EXECUTE_ORDER)] = ExecMessage::msgLength;
-        table[static_cast<uint8_t>(MessageType::EXECUTE_ORDER_WITH_PRICE)] = ExecPriceMessage::msgLength;
-        table[static_cast<uint8_t>(MessageType::REDUCE_ORDER)] = ReduceOrderMessage::msgLength;
-        table[static_cast<uint8_t>(MessageType::DELETE_ORDER)] = DeleteMessage::msgLength;
-        table[static_cast<uint8_t>(MessageType::REPLACE_ORDER)] = ReplaceMessage::msgLength;
-        table[static_cast<uint8_t>(MessageType::TRADE)] = TradeMessage::msgLength;
+        table[static_cast<uint8_t>(MessageType::ADD_ORDER)] = AddOrderMessage::LENGTH;
+        table[static_cast<uint8_t>(MessageType::ADD_ORDER_MPID)] = IdAddOrderMessage::LENGTH;
+        table[static_cast<uint8_t>(MessageType::EXECUTE_ORDER)] = ExecMessage::LENGTH;
+        table[static_cast<uint8_t>(MessageType::EXECUTE_ORDER_WITH_PRICE)] = ExecPriceMessage::LENGTH;
+        table[static_cast<uint8_t>(MessageType::REDUCE_ORDER)] = ReduceOrderMessage::LENGTH;
+        table[static_cast<uint8_t>(MessageType::DELETE_ORDER)] = DeleteMessage::LENGTH;
+        table[static_cast<uint8_t>(MessageType::REPLACE_ORDER)] = ReplaceMessage::LENGTH;
+        table[static_cast<uint8_t>(MessageType::TRADE)] = TradeMessage::LENGTH;
 
         return table;
     }

@@ -1,4 +1,5 @@
 #include "MemoryPool.h"
+#include "LFQueue.h"
 #include "PriceLevelOrders.h"
 #include "typedefs.h"
 #include <unordered_map>
@@ -6,7 +7,7 @@
 class Orderbook {
 
 public:
-    Orderbook(): orderPool(MAX_ORDERS),priceLevelPool(MAXLEVELS), orderMap(MAX_ORDERS), priceLevelsMap(MAXLEVELS){}
+    Orderbook(LFQueue<std::string>* logger): logger_(logger),orderPool(MAX_ORDERS),priceLevelPool(MAXLEVELS), orderMap(MAX_ORDERS), priceLevelsMap(MAXLEVELS){}
 
     //private API's such as priceCrosses -> Match, addToPriceLevel, addOrder will all be called from this public method
     void add(OrderId orderId, Side side, Price price, Quantity quantity);
@@ -35,6 +36,8 @@ public:
 
 private:
 
+    LFQueue<std::string>* logger_;
+
     MemoryPool<Order> orderPool;
     MemoryPool<PriceLevelOrders*> priceLevelPool;
     PriceLevelOrders* bids_ = nullptr;
@@ -44,6 +47,7 @@ private:
     std::unordered_map<Price, PriceLevelOrders*> priceLevelsMap;
     size_t nextOrderId = 1;
 
+    //void logEvent() noexcept {}
     //if using particular exchange we may have to implement exchanged specific logic
     auto getNextOrderId() noexcept {
         return nextOrderId++;

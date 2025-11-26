@@ -1,10 +1,15 @@
 #pragma once
-#include <cstdint>
-#include <__stddef_size_t.h>
+#include <chrono>
+#include <format>
+#include <iostream>
 #include <array>
 
+inline auto getCurrentTimeStr() {
+    return std::format("{:%H:%M:%S}", std::chrono::system_clock::now());
+}
+
 enum class Side {UNITIALIZED,BUY,SELL};
-//adding 40 bytes to allow for potential leftover from spliced message at end of buffer
+
 constexpr size_t BUFFER_SIZE = 1024*1024+40;
 
 //arbitrary for now, our current data file is 8Gb so this will hold enough
@@ -28,3 +33,10 @@ struct ReadBuffer {
     RawBuffer* buffer;
     size_t size;
 };
+
+inline auto ASSERT(bool cond, const std::string& msg) noexcept {
+    if (!cond) [[unlikely]]{
+        std::cerr << "ASSERT ERROR:" << msg << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
