@@ -42,7 +42,7 @@ void Engine::handleMessage(const char* message,MessageType type){
 
         case(MessageType::ADD_ORDER_MPID): {
             auto msg = IdAddOrderMessage::parseMessage(message);
-            //orderBook_->add(msg.);
+            orderBook_->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_, msg.clientId_);
             message += AddOrderMessage::LENGTH;
             break;
         }

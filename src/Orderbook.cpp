@@ -1,9 +1,9 @@
 #include "../include/Orderbook.h"
 
-void Orderbook::add(OrderId orderId, Side side, Price price, Quantity quantity){
+void Orderbook::add(OrderId orderId, Side side, Price price, Quantity quantity, ClientId client){
     //in must allocate an orderFirst
-    Order* newOrder = orderPool.Allocate(orderId,side,price,quantity);
-    //once order is Added, now we have to place it into the orderMap, given Orders are sequential we can simply place it at the next index
+    Order* newOrder = orderPool.Allocate(orderId,side,price,quantity,client);
+
     if (nextOrderId != newOrder->orderId_){
         //error here, maybe try to ASSERT so we don't deal with this at run time
     }
@@ -29,12 +29,11 @@ void Orderbook::deleteOrder(OrderId orderId){
     orderPool.deallocate(order);
 }
 
-void Orderbook::recordAggressiveOrder(OrderId orderId, Price price, Quantity quantity){
-    //not sure if needed, need to understand message sequencing more,
-}
-
 void Orderbook::fillPassiveOrder(OrderId orderId, Quantity quantity, bool withPrice){
     auto order = getOrder(orderId);
+    if (withPrice){
+        //addOrderToTail(*newOrder, *orderPriceLevel);
+    }
     order->Fill(quantity);
 }
 
