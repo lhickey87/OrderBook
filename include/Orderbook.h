@@ -14,7 +14,9 @@ public:
 
     void deleteOrder(OrderId orderId); //cancel from order's hashmap by setting to nullptr
 
-    void fillPassiveOrder(OrderId orderId, Quantity quantity, bool withPrice);
+    void executeOrderAtPrice(OrderId orderId, Quantity quantity, Price price);
+
+    void executeOrder(OrderId orderId, Quantity quantity);
 
     void reduceOrder(OrderId orderId, Quantity cancelled);
 
