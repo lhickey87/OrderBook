@@ -29,11 +29,14 @@ void Orderbook::deleteOrder(OrderId orderId){
     orderPool.deallocate(order);
 }
 
-void Orderbook::fillPassiveOrder(OrderId orderId, Quantity quantity, bool withPrice){
+void Orderbook::executeOrderAtPrice(OrderId orderId, Quantity quantity, Price price){
     auto order = getOrder(orderId);
-    if (withPrice){
-        //addOrderToTail(*newOrder, *orderPriceLevel);
-    }
+    //logger->log("order: {} executed at price:{} with quantity: {}");
+    order->Fill(quantity);
+}
+
+void Orderbook::executeOrder(OrderId orderId, Quantity quantity){
+    auto order = getOrder(orderId);
     order->Fill(quantity);
 }
 

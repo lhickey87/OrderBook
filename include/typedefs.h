@@ -8,7 +8,6 @@ inline auto getCurrentTimeStr() {
     return std::format("{:%H:%M:%S}", std::chrono::system_clock::now());
 }
 
-
 enum class Side {UNITIALIZED,BUY,SELL};
 
 constexpr size_t BUFFER_SIZE = 1024*1024+40;
@@ -25,9 +24,6 @@ using TickerId = uint16_t;
 
 constexpr size_t MAXLEVELS = 1 << 10;
 constexpr size_t MAX_ORDERS = 1 << 20;
-
-constexpr bool WITH_PRICE = true;
-constexpr bool WITHOUT_PRICE = false;
 
 using RawBuffer = std::array<char,BUFFER_SIZE>;
 
