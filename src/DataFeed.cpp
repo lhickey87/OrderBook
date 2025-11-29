@@ -1,9 +1,8 @@
 #include "../include/DataFeed.h"
 
 
-auto DataFeed::readBuffer() {
-
-    while (true){
+void DataFeed::run(){
+    while (run_.load(std::memory_order_acquire)){
         //will do reading here
         RawBuffer* buffer = bufferPool_->Allocate(); //should allocate the char array
         auto dataPtr = buffer->data();
@@ -37,7 +36,6 @@ auto DataFeed::readBuffer() {
 }
 
 //instead we have to use message Lentghs table
-
 size_t getBoundary(char* msgBuf, size_t validBytes){
     //skip each and every message length, once messageLength> remaining, then from that exact byte we return
     const auto LengthsMap = MsgLengthMap; //defined in message.h header
