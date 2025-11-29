@@ -51,25 +51,31 @@ struct Message {
 template<>
 struct Message<MessageType::ADD_ORDER> {
 
-    Message(Time time, OrderId orderId, Side side,
-            Quantity quantity, TickerId ticker, Price price)
-        : timeStamp_(time),
-          orderId_(orderId),
-          side_(side),
-          orderQuantity_(quantity),
-          stockTicker_(ticker),
-          price_(price) {}
-    static constexpr uint16_t LENGTH = 36;
-    const Time timeStamp_; //4 bytes
-    const OrderId orderId_; //8 bytes
-    const Side side_; //1 byte
-    const Quantity orderQuantity_;
-    const TickerId stockTicker_;
-    const Price price_;
+    Message(uint16_t stockLocate, uint16_t tracking, Time time,
+            OrderId orderId, Side side, Quantity quantity,
+            TickerId ticker, Price price)
+            : stockLocate_(stockLocate),
+              tracking_(tracking),
+              time_(time),
+              orderId_(orderId),
+              side_(side),
+              orderQuantity_(quantity),
+              stockTicker_(ticker),
+              price_(price){}
 
-    static Message parseMessage(const char* msgPtr){
-        return Message<MessageType::ADD_ORDER>(getTime(msgPtr+1),getOrderId(msgPtr+5), getSide(msgPtr+13),
-                                               getQuantity(msgPtr+14), getTicker(msgPtr+18),getPrice(msgPtr+26));
+        static constexpr uint16_t LENGTH = 36;
+        const uint16_t stockLocate_;
+        const uint16_t tracking_;
+        const Time time_; //4 bytes
+        const OrderId orderId_; //8 bytes
+        const Side side_; //1 byte
+        const Quantity orderQuantity_;
+        const TickerId stockTicker_;
+        const Price price_;
+        static Message parseMessage(const char* bufPtr){
+        return Message<MessageType::ADD_ORDER>(get16bit(bufPtr+1),get16bit(bufPtr+3),getTime(bufPtr+5),
+                                              getOrderId(bufPtr+11),getSide(bufPtr+19),getQuantity(bufPtr+20),
+                                               getTicker(bufPtr+24), getPrice(bufPtr+32));
     }
 };
 
@@ -78,32 +84,60 @@ using AddOrderMessage = Message<MessageType::ADD_ORDER>;
 template<>
 struct Message<MessageType::ADD_ORDER_MPID> {
 
-    Message(const AddOrderMessage baseMsg, uint32_t clientId) : base(baseMsg), clientId_(clientId){}
+    Message(uint16_t stockLocate, uint16_t tracking, Time time,
+            OrderId orderId, Side side, Quantity quantity,
+            TickerId ticker, Price price,ClientId clientId)
+            : stockLocate_(stockLocate),
+              tracking_(tracking),
+              time_(time),
+              orderId_(orderId),
+              side_(side),
+              orderQuantity_(quantity),
+              stockTicker_(ticker),
+              price_(price),
+              clientId_(clientId){}
+
     static constexpr uint16_t LENGTH = 40;
-    const AddOrderMessage base;
-    const uint32_t clientId_;
+
+    const uint16_t stockLocate_;
+    const uint16_t tracking_;
+    const Time time_; //4 bytes
+    const OrderId orderId_; //8 bytes
+    const Side side_; //1 byte
+    const Quantity orderQuantity_;
+    const TickerId stockTicker_;
+    const Price price_;
+    const ClientId clientId_;
     static Message parseMessage(const char* bufPtr){
-        return Message(AddOrderMessage::parseMessage(bufPtr), get32bit(bufPtr+36));
+        return Message<MessageType::ADD_ORDER_MPID>(get16bit(bufPtr+1),get16bit(bufPtr+3),getTime(bufPtr+5),
+                                                    getOrderId(bufPtr+11),getSide(bufPtr+19),getQuantity(bufPtr+20),
+                                                    getTicker(bufPtr+24), getPrice(bufPtr+32), get32bit(bufPtr+36));
     }
 };
 using IdAddOrderMessage = Message<MessageType::ADD_ORDER_MPID>;
 
 template<>
 struct Message<MessageType::EXECUTE_ORDER> {
-    Message(Time time, OrderId orderId, Quantity quantity, uint64_t matchNum)
-        : time_(time),
+    Message(uint16_t locate, uint16_t tracking, Time time,
+            OrderId orderId, Quantity quantity, uint64_t matchNum)
+        : stockLocate_(locate),
+          tracking_(tracking),
+          time_(time),
           orderId_(orderId),
           numShares(quantity),
           matchNumber(matchNum){}
 
     static constexpr uint16_t LENGTH = 31;
+    const uint16_t stockLocate_;
+    const uint16_t tracking_;
     const Time time_;
     const OrderId orderId_;
     const Quantity numShares;
     const uint64_t matchNumber;
 
     static Message parseMessage(const char* bufPtr){
-        return Message<MessageType::EXECUTE_ORDER>(getTime(bufPtr+1), getOrderId(bufPtr+5),getQuantity(bufPtr+13), get64bit(bufPtr+17));
+        return Message<MessageType::EXECUTE_ORDER>(get16bit(bufPtr+1),get16bit(bufPtr+3),getTime(bufPtr+5),
+                                                   getOrderId(bufPtr+11),getQuantity(bufPtr+19),get64bit(bufPtr+23));
     }
 };
 using ExecMessage = Message<MessageType::EXECUTE_ORDER>;
@@ -111,22 +145,28 @@ using ExecMessage = Message<MessageType::EXECUTE_ORDER>;
 
 template<>
 struct Message<MessageType::EXECUTE_ORDER_WITH_PRICE> {
-    Message(Time time, OrderId orderId, Quantity quantity,
-            uint64_t matchNum, Price price)
-            : time_(time),
+    Message(uint16_t stockLocate, uint16_t tracking, Time time,
+            OrderId orderId, Quantity quantity, uint64_t matchNum,
+            Price price)
+            : stockLocate_(stockLocate),
+              tracking_(tracking),
+              time_(time),
               orderId_(orderId),
               numShares(quantity),
               matchNumber(matchNum),
               execPrice(price){}
     static constexpr uint16_t LENGTH = 36;
+    const uint16_t stockLocate_;
+    const uint16_t tracking_;
     const Time time_;
     const OrderId orderId_;
     const Quantity numShares;
     const uint64_t matchNumber;
     const Price execPrice;
     static Message parseMessage(const char* bufPtr){
-        return Message<MessageType::EXECUTE_ORDER_WITH_PRICE>(getTime(bufPtr+1), getOrderId(bufPtr+5),getQuantity(bufPtr+13),
-                                                              get64bit(bufPtr+17), getPrice(bufPtr+26));
+        return Message<MessageType::EXECUTE_ORDER_WITH_PRICE>(get16bit(bufPtr+1),get16bit(bufPtr+3),getTime(bufPtr+5),
+                                                              getOrderId(bufPtr+11), getQuantity(bufPtr+19), get64bit(bufPtr+23),
+                                                              getPrice(bufPtr+32));
     }
 };
 
@@ -135,16 +175,22 @@ using ExecPriceMessage = Message<MessageType::EXECUTE_ORDER_WITH_PRICE>;
 template<>
 struct Message<MessageType::REDUCE_ORDER> {
 
-    Message(Time time, OrderId orderId, Quantity quantity)
-        : time_(time),
-          orderId_(orderId),
-          cancelledShares(quantity){}
+    Message(uint16_t stockLocate, uint16_t tracking, Time time,
+            OrderId orderId, Quantity quantity)
+            :stockLocate_(stockLocate),
+             tracking_(tracking),
+             time_(time),
+             orderId_(orderId),
+             cancelledShares(quantity){}
     static constexpr uint16_t LENGTH = 23;
+    const uint16_t stockLocate_;
+    const uint16_t tracking_;
     const Time time_;
     const OrderId orderId_;
     const Quantity cancelledShares;
     static Message parseMessage(const char* bufPtr){
-        return Message<MessageType::REDUCE_ORDER>(getTime(bufPtr+1),getOrderId(bufPtr+5),getQuantity(bufPtr+13));
+        return Message<MessageType::REDUCE_ORDER>(get16bit(bufPtr+1),get16bit(bufPtr+3),getTime(bufPtr+5),
+                                                  getOrderId(bufPtr+11), getQuantity(bufPtr+19));
     }
 };
 
@@ -152,28 +198,38 @@ using ReduceOrderMessage = Message<MessageType::REDUCE_ORDER>;
 
 template<>
 struct Message<MessageType::DELETE_ORDER> {
-    Message(Time time, OrderId orderId)
-        : time_(time),
+    Message(uint16_t stockLocate, uint16_t tracking, Time time, OrderId orderId)
+        : stockLocate_(stockLocate),
+          tracking_(tracking),
+          time_(time),
           cancelOrderId(orderId){}
     static constexpr uint16_t LENGTH = 19;
+    const uint16_t stockLocate_;
+    const uint16_t tracking_;
     const Time time_;
     const OrderId cancelOrderId;
     static Message parseMessage(const char* bufPtr){
-        return Message<MessageType::DELETE_ORDER>(getTime(bufPtr+1),getOrderId(bufPtr+5));
+        return Message<MessageType::DELETE_ORDER>(get16bit(bufPtr+1),get16bit(bufPtr+3),getTime(bufPtr+5),
+                                                  getOrderId(bufPtr+11));
     }
 };
 using DeleteMessage = Message<MessageType::DELETE_ORDER>;
 
 template<>
 struct Message<MessageType::REPLACE_ORDER> {
-    Message(Time time, OrderId oldOrder, OrderId newOrder,
-            Quantity quantity,Price price)
-            : time_(time),
+    Message(uint16_t stockLocate, uint16_t tracking, Time time,
+            OrderId oldOrder, OrderId newOrder, Quantity quantity,
+            Price price)
+            : stockLocate_(stockLocate),
+              tracking_(tracking),
+              time_(time),
               oldOrderId(oldOrder),
               newOrderId(newOrder),
               numShares(quantity),
               newPrice(price){}
     static constexpr uint16_t LENGTH = 35;
+    const uint16_t stockLocate_;
+    const uint16_t tracking_;
     const Time time_;
     const OrderId oldOrderId;
     const OrderId newOrderId;
@@ -181,31 +237,43 @@ struct Message<MessageType::REPLACE_ORDER> {
     const Price newPrice;
 
     static Message parseMessage(const char* bufPtr){
-        return Message<MessageType::REPLACE_ORDER>(getTime(bufPtr+1),getOrderId(bufPtr+5),getOrderId(bufPtr+13),
-                              getQuantity(bufPtr+21),getPrice(bufPtr+25));
+        return Message<MessageType::REPLACE_ORDER>(get16bit(bufPtr+1),get16bit(bufPtr+3),getTime(bufPtr+5),
+                                                   getOrderId(bufPtr+11),getOrderId(bufPtr+19), getQuantity(bufPtr+27),
+                                                   getPrice(bufPtr+31));
     }
 };
 using ReplaceMessage =Message<MessageType::REPLACE_ORDER>;
 
 template<>
 struct Message<MessageType::TRADE> {
-    Message(Time time, Quantity quantity,
-        TickerId ticker,Price price, uint64_t matchNum)
-        : time_(time),
-          sharesMatched(quantity),
-          ticker_(ticker),
-          matchPrice(price),
-          matchNumber(matchNum){}
+    Message(uint16_t stockLocate, uint16_t tracking, Time time,
+            OrderId orderId, Side side, Quantity quantity,
+            TickerId ticker, Price price, uint64_t matchNum)
+            : stockLocate_(stockLocate),
+              tracking_(tracking),
+              time_(time),
+              orderId_(orderId),
+              side_(side),
+              sharesMatched(quantity),
+              ticker_(ticker),
+              price_(price),
+              matchNumber(matchNum){}
+
     static constexpr uint16_t LENGTH = 44;
+    const uint16_t stockLocate_;
+    const uint16_t tracking_;
     const Time time_;
+    const OrderId orderId_;
+    const Side side_;
     const Quantity sharesMatched;
     const TickerId ticker_;
-    const Price matchPrice;
+    const Price price_;
     const uint64_t matchNumber;
 
     static Message parseMessage(const char* bufPtr){
-        return Message<MessageType::TRADE>(getTime(bufPtr+1), getQuantity(bufPtr+14), getTicker(bufPtr+18),
-            getPrice(bufPtr+26),get64bit(bufPtr+30));
+        return Message<MessageType::TRADE>(get16bit(bufPtr+1),get16Bit(bufPtr+3),getTime(bufPtr+5),
+                                           getOrderId(bufPtr+11),getSide(bufPtr+19), getQuantity(bufPtr+20),
+                                           getTicker(bufPtr+24), getPrice(bufPtr+32),get64bit(bufPtr+36));
     }
 };
 using TradeMessage = Message<MessageType::TRADE>;
