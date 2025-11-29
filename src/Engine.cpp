@@ -1,23 +1,22 @@
 #include "../include/Engine.h"
 #include <cstring>
 
-//this would likely be in
-auto Engine::readMessage() {
+void Engine::run(){
 
-    while (bufferQueue_->isEmpty()){
-        std::this_thread::yield();
+    while (run_.load(std::memory_order_acquire)){
+
+        while (bufferQueue_->isEmpty())[[unlikely]]{}
+        auto bufPtr = bufferQueue_->getReadElement();
+
+        handleBuffer(bufPtr);
     }
-
-    auto bufPtr = bufferQueue_->getReadElement();
-    handleBuffer(bufPtr);
-    //what if we have leftover buffer
 }
 
 void Engine::handleBuffer(const ReadBuffer* bufPtr) {
     size_t remainingBytes = bufPtr->size;
     const char* buffer = bufPtr->buffer->data(); //this is the actual std::array of chars
     uint8_t length;
-    while (remainingBytes > 0){
+    while (true){
         // first byte here will be the type of the message, can use this to get it's length
         length = MsgLengthMap[*buffer];
         if (length > remainingBytes) [[unlikely]]{
@@ -56,14 +55,14 @@ void Engine::handleMessage(const char* message,MessageType type){
 
         case(MessageType::EXECUTE_ORDER): {
             auto msg = ExecMessage::parseMessage(message);
-            orderBook_->fillPassiveOrder(msg.orderId_,msg.numShares, WITHOUT_PRICE);
+            orderBook_->executeOrder(msg.orderId_,msg.numShares);
             message += ExecMessage::LENGTH;
             break;
         }
 
         case(MessageType::EXECUTE_ORDER_WITH_PRICE): {
             auto msg = ExecPriceMessage::parseMessage(message);
-            orderBook_->fillPassiveOrder(msg.orderId_,msg.numShares, WITH_PRICE);
+            orderBook_->executeOrderAtPrice(msg.orderId_,msg.numShares);
             message += ExecPriceMessage::LENGTH;
             break;
         }

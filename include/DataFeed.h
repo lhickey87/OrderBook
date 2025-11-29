@@ -37,6 +37,10 @@ public:
         readThread = createThread(coreId,"DataFeed",[this](){run();});
     }
 
+    auto stop(){
+        run_.store(false,std::memory_order_release);
+    }
+
     DataFeed() = delete;
     DataFeed& operator=(const DataFeed&) = delete;
     DataFeed& operator=(DataFeed&&) = delete;
