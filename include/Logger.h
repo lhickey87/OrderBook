@@ -23,6 +23,8 @@ public:
 
 private:
 
+    std::atomic<bool> run_;
+
     LogQueue queue_;
     std::string fileName_;
     std::ofstream file;

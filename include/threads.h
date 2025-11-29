@@ -39,7 +39,7 @@ auto createThread(int coreId, std::string_view threadName, Func&& func){
             std::cerr << "could not pin thread to core: " << coreId << "\n";
             exit(EXIT_FAILURE);
         }
-        std::forward<Func>(func);
+        std::forward<Func>(func)();
     });
 
     //may have to sleep main thread
