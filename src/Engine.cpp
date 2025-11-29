@@ -16,7 +16,7 @@ void Engine::handleBuffer(const ReadBuffer* bufPtr) {
     size_t remainingBytes = bufPtr->size;
     const char* buffer = bufPtr->buffer->data(); //this is the actual std::array of chars
     uint8_t length;
-    while (true){
+    while (remainingBytes > 0){
         // first byte here will be the type of the message, can use this to get it's length
         length = MsgLengthMap[*buffer];
         if (length > remainingBytes) [[unlikely]]{

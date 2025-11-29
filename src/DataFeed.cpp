@@ -8,6 +8,7 @@ void DataFeed::run(){
         auto dataPtr = buffer->data();
         //we would have previously
         if (leftoverSize > 0){
+            leftover_.clear();
             std::memcpy(leftover_.data(),dataPtr,leftoverSize);
         }
 
@@ -17,13 +18,17 @@ void DataFeed::run(){
         ssize_t bytesRead =::read(fd_,dataPtr+leftoverSize,bytesLeft);
         if (bytesRead == 0){
             bufferPool_->deallocate(buffer);
+            //we will have to find a way to throw a signal at this point to alert all other threads to relinquish control, once they have finished all ops
             break;
         }
+
         size_t totalBytes = bytesRead+leftoverSize;
         size_t boundary = getBoundary(dataPtr,totalBytes); //this will return the address to stop at
         size_t remainingBytes = totalBytes-boundary;
 
         if (remainingBytes > 0){
+            //will have to work around having to clear twice
+            leftover_.clear();
             std::memcpy(leftover_.data(), dataPtr+boundary, remainingBytes);
         }
 
