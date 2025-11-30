@@ -17,7 +17,7 @@ constexpr size_t MAX_BUFFERS = 10*1024;
 
 using ClientId = uint32_t;
 using Quantity = std::uint32_t;
-using Price = std::int64_t;
+using Price = std::int32_t;
 using Time = uint64_t;
 using OrderId = std::uint64_t;
 using TickerId = uint16_t;

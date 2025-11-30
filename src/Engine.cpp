@@ -31,6 +31,8 @@ void Engine::handleBuffer(const ReadBuffer* bufPtr) {
 
 //could assume that we call handleMessage after getting the length of the message
 void Engine::handleMessage(const char* message,MessageType type){
+    //need to handle the messageHeader which would be total of 5 bytes
+    // 1 byte for type, 2 bytes for locate, 2 bytes for tracking num
     switch (type){
         case (MessageType::ADD_ORDER): {
             auto msg = AddOrderMessage::parseMessage(message);
