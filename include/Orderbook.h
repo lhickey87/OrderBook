@@ -1,5 +1,6 @@
 #include "MemoryPool.h"
 #include "LFQueue.h"
+#include "Message.h"
 #include "PriceLevelOrders.h"
 #include "typedefs.h"
 #include <unordered_map>
@@ -26,7 +27,7 @@ public:
 
     Order* getOrder(OrderId orderId) noexcept {return orderMap.at(orderId);}
 
-    PriceLevelOrders* getPriceLevel(Price price) const noexcept {
+    auto getPriceLevel(Price price) noexcept {
         return priceLevelsMap.at(priceToIndex(price));
     }
 
@@ -44,7 +45,7 @@ private:
     LFQueue<std::string>* logger_;
 
     MemoryPool<Order> orderPool;
-    MemoryPool<PriceLevelOrders*> priceLevelPool;
+    MemoryPool<PriceLevelOrders> priceLevelPool;
     PriceLevelOrders* bids_ = nullptr;
     PriceLevelOrders* asks_ = nullptr;
 
@@ -64,7 +65,7 @@ private:
         if (!levelOrders){
             order->nextOrder_ = order->prevOrder_ = order;
             auto newPriceLevel = priceLevelPool.Allocate(order->side_, order->price_, order);
-            addPriceLevel(*newPriceLevel);
+            addPriceLevel(newPriceLevel);
         } else {
             auto BestSideLevel = (order->side_ == Side::BUY) ? bids_ : asks_;
             while (!priceLevelCompare(order->side_, BestSideLevel->price_, order->price_)){
@@ -134,29 +135,19 @@ private:
     }
 
     void removePriceLevel(Price price, Side side) noexcept {
-        //will just need to do a few main checks, if its the head
         auto& bestLevel = (side == Side::BUY) ? bids_ : asks_;
-        auto const priceLevel = getPriceLevel(price);
+        auto priceLevel = getPriceLevel(price);
 
         priceLevel->nextPrice_->prevPrice_ = priceLevel->prevPrice_;
         priceLevel->prevPrice_->nextPrice_ = priceLevel->nextPrice_;
 
         if (priceLevel == bestLevel){
-
+            bestLevel = priceLevel->nextPrice_;
         }
 
+        priceLevel->nextPrice_ = priceLevel->prevPrice_ = nullptr;
+        priceLevelsMap.at(priceToIndex(priceLevel->price_)) = nullptr;
 
-
+        priceLevelPool.deallocate(priceLevel);
     }
-
-    auto removeLevel(PriceLevelOrders* priceLevel){
-        auto bestLevel = (priceLevel->side_ == Side::BUY)? bids_ : asks_;
-        auto prev = priceLevel->prevPrice_;
-        prev->nextPrice_ = bestLevel->nextPrice_;
-        bestLevel->nextPrice_->prevPrice_ = prev;
-
-        bestLevel->nextPrice_ = nullptr;
-        bestLevel->prevPrice_ = nullptr;
-    }
-
 };

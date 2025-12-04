@@ -4,16 +4,11 @@
 #include <iostream>
 #include <array>
 
-inline auto getCurrentTimeStr() {
-    return std::format("{:%H:%M:%S}", std::chrono::system_clock::now());
-}
-
 enum class Side {UNITIALIZED,BUY,SELL};
 
 constexpr size_t BUFFER_SIZE = 1024*1024+40;
 
 //arbitrary for now, our current data file is 8Gb so this will hold enough
-constexpr size_t MAX_BUFFERS = 10*1024;
 
 using ClientId = uint32_t;
 using Quantity = std::uint32_t;

@@ -15,7 +15,6 @@ void Orderbook::add(OrderId orderId, Side side, Price price, Quantity quantity, 
 
 void Orderbook::deleteOrder(OrderId orderId){
     auto order = getOrder(orderId);
-    auto priceLevel = getPriceLevel(order->price_);
     if (order->prevOrder_ == order){
         removePriceLevel(order->price_, order->side_);
         return;
