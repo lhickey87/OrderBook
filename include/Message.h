@@ -1,6 +1,7 @@
 #pragma once
 #include "typedefs.h"
 #include <memory>
+#include <ostream>
 #include "endian.h"
 
 enum class MessageType {
@@ -14,33 +15,33 @@ enum class MessageType {
     TRADE = 'P',
 };
 
-static auto get16bit(const char* memPtr){
+static auto get16bit(const uint8_t* memPtr){
     uint16_t result;
     std::memcpy(&result,memPtr,sizeof(result));
     return be16toh(result);
 }
 
-static auto get32bit(const char* memPtr){
+static auto get32bit(const uint8_t* memPtr){
     uint32_t result;
     std::memcpy(&result,memPtr,sizeof(result));
     return be32toh(result);
 }
 
-static auto get64bit(const char* memPtr) {
+static auto get64bit(const uint8_t* memPtr) {
     uint64_t result; //this will be the destination of std::memcpy
     std::memcpy(&result, memPtr,sizeof(result));
     return be64toh(result);
 }
 
-static auto getOrderId(const char* msgPtr){return get64bit(msgPtr);}
-static auto getQuantity(const char* msgPtr){return get32bit(msgPtr);}
-static auto getPrice(const char* msgPtr){return get32bit(msgPtr);}
-static auto getTicker(const char* msgPtr){ return get64bit(msgPtr);}
-static auto getSide(const char* msgPtr){return Side(*msgPtr);}
+static auto getOrderId(const uint8_t* msgPtr){return get64bit(msgPtr);}
+static auto getQuantity(const uint8_t* msgPtr){return get32bit(msgPtr);}
+static auto getPrice(const uint8_t* msgPtr){return get32bit(msgPtr);}
+static auto getTicker(const uint8_t* msgPtr){ return get64bit(msgPtr);}
+static auto getSide(const uint8_t* msgPtr){return Side(*msgPtr);}
 
-static Time getTime(const char* msgPtr){
+static Time getTime(const uint8_t* msgPtr){
     uint64_t result;
-    char* memPtr = (char *)&result;
+    uint8_t* memPtr = (uint8_t *)&result;
     std::memcpy(memPtr, msgPtr, 6);
     return (get64bit(memPtr) >> 16);
 }
@@ -48,9 +49,14 @@ static Time getTime(const char* msgPtr){
 template<MessageType msg>
 struct Message {
     static constexpr MessageType messageType_ = msg;
-    static Message parse(const char *ptr) {
+
+    static Message parse(const uint8_t *ptr) {
         static_cast<void>(ptr);
         return Message();
+    }
+
+    void print(std::ostream& outputStream) const {
+       outputStream << "base \n";
     }
 };
 
@@ -75,12 +81,21 @@ struct Message<MessageType::ADD_ORDER> {
     const Quantity orderQuantity_;
     const Price price_;
     const Side side_; //1 byte
-    static Message parseMessage(const char* bufPtr){
+
+    static Message parseMessage(const uint8_t* bufPtr){
     return AddOrderMessage(getTime(bufPtr+5), getOrderId(bufPtr+11), getTicker(bufPtr+24),
                                            getQuantity(bufPtr+20), getPrice(bufPtr+32), getSide(bufPtr+19));
     }
-};
 
+    auto print(std::ostream& outputStream) const {
+        outputStream << "- Add Order Message -" << "\n"
+        << "OrderId: " << orderId_ << "\n"
+        << "Quantity: " << orderQuantity_ << "\n"
+        << "Price: " << price_ << "\n"
+        << "Ticker: " << stockTicker_ << "\n";
+    }
+
+};
 
 using IdAddOrderMessage = Message<MessageType::ADD_ORDER_MPID>;
 template<>
@@ -106,10 +121,18 @@ struct Message<MessageType::ADD_ORDER_MPID> {
     const Price price_;
     const ClientId clientId_;
     const Side side_; //1 byte
-    static Message parseMessage(const char* bufPtr){
+    static Message parseMessage(const uint8_t* bufPtr){
     return IdAddOrderMessage(getTime(bufPtr+5),getOrderId(bufPtr+11),getQuantity(bufPtr+20),
-                            getTicker(bufPtr+24), getPrice(bufPtr+32), get32bit(bufPtr+36),
+                             getTicker(bufPtr+24), getPrice(bufPtr+32), get32bit(bufPtr+36),
                             getSide(bufPtr+19));
+    }
+
+    auto print(std::ostream& outputStream) const {
+        outputStream << "- Add Order Message -" << "\n"
+        << "OrderId: " << orderId_ << "\n"
+        << "Quantity: " << orderQuantity_ << "\n"
+        << "Price: " << price_ << "\n"
+        << "Ticker: " << stockTicker_ << "\n";
     }
 };
 
@@ -129,8 +152,15 @@ struct Message<MessageType::EXECUTE_ORDER> {
     const uint64_t matchNumber; //8 bits
     const Quantity numShares; //4 bits
 
-    static Message parseMessage(const char* bufPtr){
+    static Message parseMessage(const uint8_t* bufPtr){
         return ExecMessage(getOrderId(bufPtr+11),getTime(bufPtr+5),get64bit(bufPtr+23),getQuantity(bufPtr+19));
+    }
+
+    auto print(std::ostream& outputStream) const {
+        outputStream << "- Execute Order Message -" << "\n"
+        << "OrderId: " << orderId_ << "\n"
+        << "Quantity: " << numShares << "\n"
+        << "Match Number" << matchNumber << "\n";
     }
 };
 
@@ -146,15 +176,24 @@ struct Message<MessageType::EXECUTE_ORDER_WITH_PRICE> {
               numShares(quantity),
               matchNumber(matchNum),
               execPrice(price){}
+
     static constexpr uint16_t LENGTH = 36;
     const Time time_;
     const OrderId orderId_;
     const uint64_t matchNumber;
     const Quantity numShares;
     const Price execPrice;
-    static Message parseMessage(const char* bufPtr){
+    static Message parseMessage(const uint8_t* bufPtr){
         return ExecPriceMessage(getTime(bufPtr+5), getOrderId(bufPtr+11), get64bit(bufPtr+23),
                                 getQuantity(bufPtr+19), getPrice(bufPtr+32));
+    }
+
+    auto print(std::ostream& outputStream) const {
+        outputStream << "- Execute Order With Price Message -" << "\n"
+        << "New OrderId: " << orderId_ << "\n"
+        << "Quantity: " << numShares << "\n"
+        << "Price: " << execPrice << "\n"
+        << "Match Number" << matchNumber << "\n";
     }
 };
 
@@ -171,8 +210,14 @@ struct Message<MessageType::REDUCE_ORDER> {
     const Time time_;
     const OrderId orderId_;
     const Quantity cancelledShares;
-    static Message parseMessage(const char* bufPtr){
+    static Message parseMessage(const uint8_t* bufPtr){
         return ReduceOrderMessage(getTime(bufPtr+5),getOrderId(bufPtr+11), getQuantity(bufPtr+19));
+    }
+
+    auto print(std::ostream& outputStream) const {
+        outputStream << "- Reduce Order Message -" << "\n"
+        << "OrderId: " << orderId_ << "\n"
+        << "Quantity Canceled: " << cancelledShares << "\n";
     }
 };
 
@@ -187,8 +232,13 @@ struct Message<MessageType::DELETE_ORDER> {
 
     const Time time_;
     const OrderId cancelOrderId;
-    static Message parseMessage(const char* bufPtr){
+    static Message parseMessage(const uint8_t* bufPtr){
         return DeleteMessage(getTime(bufPtr+5), getOrderId(bufPtr+11));
+    }
+
+    auto print(std::ostream& outputStream) const {
+        outputStream << "- Delete Order Message -" << "\n"
+        << "OrderId: " << cancelOrderId << "\n";
     }
 };
 
@@ -211,9 +261,17 @@ struct Message<MessageType::REPLACE_ORDER> {
     const Quantity numShares;
     const Price newPrice;
 
-    static Message parseMessage(const char* bufPtr){
+    static Message parseMessage(const uint8_t* bufPtr){
         return ReplaceMessage(getTime(bufPtr+5), getOrderId(bufPtr+11),getOrderId(bufPtr+19),
                                                    getQuantity(bufPtr+27), getPrice(bufPtr+31));
+    }
+
+    auto print(std::ostream& outputStream) const {
+        outputStream << "- Replace Order Message -" << "\n"
+        << "Old OrderId: " << oldOrderId << "\n"
+        << "New OrderId: " << newOrderId << "\n"
+        << "Quantity: " << numShares << "\n"
+        << "Price: " << newPrice << "\n";
     }
 };
 
@@ -242,12 +300,27 @@ struct Message<MessageType::TRADE> {
     const Price price_;
     const Side side_;
 
-    static Message parseMessage(const char* bufPtr){
+    static Message parseMessage(const uint8_t* bufPtr){
         return TradeMessage(getTime(bufPtr+5), getOrderId(bufPtr+11), get64bit(bufPtr+36),
                             getTicker(bufPtr+24), getQuantity(bufPtr+20), getPrice(bufPtr+32),
                             getSide(bufPtr+19));
     }
+
+    auto print(std::ostream& outputStream) const {
+        outputStream << "- Trade Message -" << "\n"
+        << "OrderId: " << orderId_ << "\n"
+        << "Ticker: " << ticker_ << "\n"
+        << "Quantity: " << sharesMatched << "\n"
+        << "Price: " << price_ << "\n";
+    }
 };
+
+
+template <MessageType MsgType>
+std::ostream& operator<<(std::ostream& outputStream, const Message<MsgType>& msg){
+    msg.print(outputStream);
+    return outputStream;
+}
 
 struct MessageLookup {
     // We use a helper function to populate the array at Compile Time
