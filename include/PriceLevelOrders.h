@@ -1,7 +1,6 @@
 #pragma once
 #include "Order.h"
 
-
 struct PriceLevelOrders {
     Side side_;
     Price price_;

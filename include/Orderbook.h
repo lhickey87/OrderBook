@@ -1,3 +1,4 @@
+#pragma once
 #include "MemoryPool.h"
 #include "LFQueue.h"
 #include "Message.h"
@@ -8,9 +9,8 @@
 class Orderbook {
 
 public:
-    Orderbook(LFQueue<std::string>* logger): logger_(logger),orderPool(MAX_ORDERS),priceLevelPool(MAXLEVELS), orderMap(MAX_ORDERS), priceLevelsMap(MAXLEVELS){}
+    Orderbook(): orderPool(MAX_ORDERS),priceLevelPool(MAXLEVELS), orderMap(MAX_ORDERS), priceLevelsMap(MAXLEVELS){}
 
-    //private API's such as priceCrosses -> Match, addToPriceLevel, addOrder will all be called from this public method
     void add(OrderId orderId, Side side, Price price, Quantity quantity, ClientId mpid = Order::NO_MPID);
 
     void deleteOrder(OrderId orderId); //cancel from order's hashmap by setting to nullptr
@@ -24,7 +24,6 @@ public:
     void modifyOrder(OrderId oldOrderId, OrderId newOrderId, Price newPrice, Quantity quantity);
     //telling compiler not to generate any special member funtionms
    //Orderbook() = delete;
-
     Order* getOrder(OrderId orderId) noexcept {return orderMap.at(orderId);}
 
     auto getPriceLevel(Price price) noexcept {
@@ -41,9 +40,6 @@ public:
     Orderbook& operator=(Orderbook&&) = delete;
 
 private:
-
-    LFQueue<std::string>* logger_;
-
     MemoryPool<Order> orderPool;
     MemoryPool<PriceLevelOrders> priceLevelPool;
     PriceLevelOrders* bids_ = nullptr;

@@ -6,7 +6,6 @@
 
 enum class Side {UNITIALIZED,BUY,SELL};
 
-constexpr size_t BUFFER_SIZE = 1024*1024+40;
 
 //arbitrary for now, our current data file is 8Gb so this will hold enough
 
@@ -17,8 +16,12 @@ using Time = uint64_t;
 using OrderId = std::uint64_t;
 using TickerId = uint16_t;
 
+//will have to benchmark different Buffer Sizes to see tradeoff between fitting everything in cache and
+// having to access from lock-free queue more frequently
+constexpr size_t BUFFER_SIZE = 1 << 15;
 constexpr size_t MAXLEVELS = 1 << 10;
 constexpr size_t MAX_ORDERS = 1 << 20;
+constexpr size_t MAX_BUFFERS = 64;
 
 using RawBuffer = std::array<char,BUFFER_SIZE>;
 
@@ -26,6 +29,7 @@ struct ReadBuffer {
     RawBuffer* buffer;
     size_t size;
 };
+
 
 inline auto ASSERT(bool cond, const std::string& msg) noexcept {
     if (!cond) [[unlikely]]{

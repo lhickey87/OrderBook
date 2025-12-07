@@ -13,17 +13,16 @@ struct ReadBuffer;
 template<typename T> class LFQueue;
 
 using BufferQueue = LFQueue<ReadBuffer>;
-using LogQueue = LFQueue<LogElement>;
 
 class Engine {
 
 public:
-    explicit Engine(Orderbook* orderbook, MemoryPool<RawBuffer>* bufferPool,LogQueue* logQueue, BufferQueue* bufferQueue) :
-        orderBook_(orderbook),
+    explicit Engine(MemoryPool<RawBuffer>* bufferPool,LogQueue* logQueue, BufferQueue* bufferQueue) :
+        orderBook_(new Orderbook()),
         bufferPool_(bufferPool),
         logQueue_(logQueue),
         bufferQueue_(bufferQueue),
-        splicedMessage(40)
+        splicedMessage(50)
         {}
 
     ~Engine() {}

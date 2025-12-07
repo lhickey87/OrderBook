@@ -2,7 +2,6 @@
 #include <cstring>
 
 void Engine::run(){
-
     while (run_.load(std::memory_order_acquire)){
 
         while (bufferQueue_->isEmpty())[[unlikely]]{}
