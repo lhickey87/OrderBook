@@ -1,4 +1,5 @@
 #include "../include/Engine.h"
+#include <cstdint>
 #include <cstring>
 
 void Engine::run(){
@@ -13,7 +14,7 @@ void Engine::run(){
 
 void Engine::handleBuffer(const ReadBuffer* bufPtr) {
     size_t remainingBytes = bufPtr->size;
-    const char* buffer = bufPtr->buffer->data(); //this is the actual std::array of chars
+    const uint8_t* buffer = bufPtr->buffer->data(); //this is the actual std::array of chars
     uint8_t length;
     while (remainingBytes > 0){
         // first byte here will be the type of the message, can use this to get it's length
@@ -29,7 +30,7 @@ void Engine::handleBuffer(const ReadBuffer* bufPtr) {
 }
 
 //could assume that we call handleMessage after getting the length of the message
-void Engine::handleMessage(const char* message,MessageType type){
+void Engine::handleMessage(const uint8_t* message,MessageType type){
     //need to handle the messageHeader which would be total of 5 bytes
     // 1 byte for type, 2 bytes for locate, 2 bytes for tracking num
     switch (type){

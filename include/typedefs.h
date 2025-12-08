@@ -6,9 +6,6 @@
 
 enum class Side {UNITIALIZED,BUY,SELL};
 
-
-//arbitrary for now, our current data file is 8Gb so this will hold enough
-
 using ClientId = uint32_t;
 using Quantity = std::uint32_t;
 using Price = std::int32_t;
@@ -23,7 +20,7 @@ constexpr size_t MAXLEVELS = 1 << 10;
 constexpr size_t MAX_ORDERS = 1 << 20;
 constexpr size_t MAX_BUFFERS = 64;
 
-using RawBuffer = std::array<char,BUFFER_SIZE>;
+using RawBuffer = std::array<uint8_t,BUFFER_SIZE>;
 
 struct ReadBuffer {
     RawBuffer* buffer;

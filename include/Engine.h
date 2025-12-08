@@ -39,7 +39,7 @@ public:
     }
 
     auto readMessage();
-    void handleMessage(const char* message, MessageType type);
+    void handleMessage(const uint8_t* message, MessageType type);
     void handleBuffer(const ReadBuffer* bufPtr);
 
 private:
