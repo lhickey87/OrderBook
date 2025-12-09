@@ -26,7 +26,7 @@ int main(){
     BufferQueue bufferQueue(MAX_BUFFERS);
     MemoryPool<RawBuffer> bufferPool(1024);
 
-    logger = new Logger("Orderbook.log");
+    logger = new Logger(&logQueue,"Orderbook.log");
     //logger->start(-1);
 
     const std::string fileName = "Data/APPLE_ITCH_DATA";
