@@ -125,9 +125,6 @@ public:
     }
 
 private:
-    std::atomic<bool> running_;
-    LFQueue<LogElement>* queue_; // Queue of pointers
-    std::FILE* logFile_;
 
     void consumeLogs() noexcept {
         while (running_ && !queue_->isEmpty()){
@@ -166,6 +163,7 @@ private:
 
     }
 
+
     void formatWrite(const LogElement* logElement){
         switch (logElement->type){
             case LogType::ORDER_ADD:
@@ -200,4 +198,9 @@ private:
             break;
         }
     }
+
+    std::atomic<bool> running_;
+    LFQueue<LogElement>* queue_; // Queue of pointers
+    std::thread* loggerThread_;
+    std::FILE* logFile_;
 };

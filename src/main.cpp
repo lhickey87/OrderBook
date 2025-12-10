@@ -27,7 +27,7 @@ int main(){
     MemoryPool<RawBuffer> bufferPool(1024);
 
     logger = new Logger(&logQueue,"Orderbook.log");
-    logger->start(-1);
+    //logger->start(-1);
 
     const std::string fileName = "Data/APPLE_ITCH_DATA";
 
