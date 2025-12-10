@@ -29,26 +29,19 @@ public:
 
     void run();
     auto start(int coreId){
-        run_.store(true, std::memory_order_release);
         createThread(coreId, "Engine", [this](){run();});
     };
 
-    auto stop(){
-        run_.store(false, std::memory_order_release);
-        //this will only get called on an interrupt or when we have run through all binary data
-    }
 
     auto readMessage();
-    void handleMessage(const uint8_t* message, MessageType type);
+    void handleMessage(const Byte* message, MessageType type);
     void handleBuffer(const ReadBuffer* bufPtr);
 
 private:
     //we will need some sort of queue
-    std::atomic<bool> run_; //will there be namespace issues?
-    std::vector<char> splicedMessage;
+    std::vector<Byte> splicedMessage;
     Orderbook* orderBook_;
     MemoryPool<RawBuffer>* bufferPool_;
     BufferQueue* bufferQueue_;
     LFQueue<std::string>* logQueue_;
-    std::thread* engineThread;
 };

@@ -7,6 +7,9 @@
 #include <unistd.h>
 #include <iostream>
 
+
+static constexpr uint8_t AAPL = 13;
+
 struct AppleParser {
     AppleParser(const std::string& readFile, const std::string& writeFile) {
         fd_ = ::open(readFile.c_str(), O_RDONLY);
@@ -74,7 +77,7 @@ struct AppleParser {
 
             stockLocate = get16bit(current_msg + 3);
 
-            if (stockLocate == 13) {
+            if (stockLocate == AAPL) {
                 ::write(wd_, current_msg, msgLength + MSG_HEADER_SIZE);
             }
 

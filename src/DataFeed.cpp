@@ -1,55 +1,53 @@
 #include "../include/DataFeed.h"
 
-void DataFeed::run(){
-    while (run_.load(std::memory_order_acquire)){
-        //will do reading here
-        RawBuffer* buffer = bufferPool_->Allocate(); //should allocate the char array
-        auto dataPtr = buffer->data();
-        //we would have previously
-        if (leftoverSize > 0){
-            leftover_.clear();
-            std::memcpy(leftover_.data(),dataPtr,leftoverSize);
-        }
+void DataFeed::flushFinalBuffer(RawBuffer* buffer)
+{
+    if (leftoverSize > 0) {
+        enqueueBuffer(buffer, leftoverSize);
+        bufferPool_->deallocate(buffer);
+    }
 
-        //this will be how much we read into the remaining buffer,
-        auto bytesLeft = BUFFER_SIZE - leftoverSize;
+    //this will be the terminating condition
+    enqueueBuffer(nullptr, 0);
+}
 
-        ssize_t bytesRead =::read(fd_,dataPtr+leftoverSize,bytesLeft);
-        if (bytesRead == 0){
-            bufferPool_->deallocate(buffer);
-            //we will have to find a way to throw a signal at this point to alert all other threads to relinquish control, once they have finished all ops
+void DataFeed::run()
+{
+    while (true) {
+        RawBuffer* buf = bufferPool_->Allocate();
+        auto bufferData = buf->data();
+
+        prependLeftover(bufferData);
+        size_t bytesAvailable = BUFFER_SIZE - leftoverSize;
+
+        ssize_t bytesRead = ::read(fd_, bufferData+leftoverSize, bytesAvailable);
+        if (bytesRead == 0) {
+            flushFinalBuffer(buf);
             break;
         }
 
-        size_t totalBytes = bytesRead+leftoverSize;
-        size_t boundary = getBoundary(dataPtr,totalBytes); //this will return the address to stop at
-        size_t remainingBytes = totalBytes-boundary;
+        size_t totalBytes = leftoverSize + bytesRead;
+        size_t completeBytes = getBoundary(bufferData, totalBytes);
+        size_t partialBytes  = totalBytes - completeBytes;
 
-        if (remainingBytes > 0){
-            //will have to work around having to clear twice
-            leftover_.clear();
-            std::memcpy(leftover_.data(), dataPtr+boundary, remainingBytes);
-        }
+        storeLeftover(bufferData + completeBytes, partialBytes);
+        leftoverSize = partialBytes;
 
-        leftoverSize = remainingBytes;
-        ReadBuffer* slot = bufferQueue_->getWriteElement();
-        slot->buffer = buffer;
-        slot->size = boundary;
-        bufferQueue_->incWriteIndex();
+        enqueueBuffer(buf, completeBytes);
     }
 }
 
-
-//instead we have to use message Lentghs table
-size_t getBoundary(char* msgBuf, size_t validBytes){
-    //skip each and every message length, once messageLength> remaining, then from that exact byte we return
+size_t getBoundary(const Byte* data, size_t validBytes) noexcept {
     auto remaining = validBytes;
-    size_t msgLength = 0;
-    while (true){
-        msgLength = MsgLengthMap[*msgBuf];
-        if (msgLength > remaining) [[unlikely]] break;
+
+    while (remaining > 0) {
+        auto msgLength = get16bit(data);
+
+        if (msgLength > remaining) [[unlikely]]
+            break;
+        data += msgLength;
         remaining -= msgLength;
-        msgBuf += msgLength;
     }
-    return validBytes - remaining;
+
+    return validBytes - remaining;   // number of complete bytes
 }

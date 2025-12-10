@@ -23,22 +23,21 @@ public:
                 //deal with error
             }
         }
+
     ~DataFeed(){
         ::close(fd_);
     }
 
+    void flushFinalBuffer(RawBuffer* buffer);
     //DataFeed should be entirely responsible for reading in buffers, and sending everything to ITCHParser to consume
-    auto readBuffer();
-    size_t getBoundary(char* messagebuffer, size_t validBytes);
+
+    size_t getBoundary(Byte* messagebuffer, size_t validBytes);
+
     void run();
     //this is the function that will be called from main loop via DataFeed->start()
-    auto start(int coreId){
-        run_.store(true, std::memory_order_release);
+    auto start(int coreId)
+    {
         readThread = createThread(coreId,"DataFeed",[this](){run();});
-    }
-
-    auto stop(){
-        run_.store(false,std::memory_order_release);
     }
 
     DataFeed() = delete;
@@ -47,8 +46,34 @@ public:
     DataFeed(const DataFeed&) = delete;
     DataFeed(DataFeed&&) = delete;
 private:
+
+    inline void enqueueBuffer(RawBuffer* buffer, size_t size)
+    {
+        ReadBuffer* slot = bufferQueue_->getWriteElement();
+        slot->buffer = buffer;
+        slot->size   = size;
+        bufferQueue_->incWriteIndex();
+    }
+
+    inline void prependLeftover(Byte* dst) noexcept
+    {
+        if (leftoverSize == 0) return;
+        std::memcpy(dst, leftover_.data(), leftoverSize);
+    }
+
+    inline void storeLeftover(const Byte* src, size_t partialSize) noexcept
+    {
+        if (partialSize == 0) {
+            leftoverSize = 0;
+            return;
+        }
+
+        leftoverSize = partialSize;
+        std::memcpy(leftover_.data(), src, partialSize);
+    }
+
     std::atomic<bool> run_;
-    std::vector<char> leftover_; //max Size 40
+    std::vector<uint8_t> leftover_; //max Size 40
     MemoryPool<RawBuffer>* bufferPool_;
     LFQueue<ReadBuffer>* bufferQueue_;
     int fd_;

@@ -6,6 +6,7 @@
 
 enum class Side {UNITIALIZED,BUY,SELL};
 
+using Byte = uint8_t;
 using ClientId = uint32_t;
 using Quantity = std::uint32_t;
 using Price = std::int32_t;
