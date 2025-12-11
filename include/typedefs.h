@@ -28,7 +28,6 @@ struct ReadBuffer {
     size_t size;
 };
 
-
 inline auto ASSERT(bool cond, const std::string& msg) noexcept {
     if (!cond) [[unlikely]]{
         std::cerr << "ASSERT ERROR:" << msg << std::endl;

@@ -9,7 +9,6 @@
 #include "LFQueue.h"
 #include "threads.h"
 
-
 class DataFeed {
 
 public:
@@ -30,7 +29,6 @@ public:
 
     void flushFinalBuffer(RawBuffer* buffer);
     //DataFeed should be entirely responsible for reading in buffers, and sending everything to ITCHParser to consume
-
     size_t getBoundary(Byte* messagebuffer, size_t validBytes);
 
     void run();
@@ -72,8 +70,7 @@ private:
         std::memcpy(leftover_.data(), src, partialSize);
     }
 
-    std::atomic<bool> run_;
-    std::vector<uint8_t> leftover_; //max Size 40
+    std::vector<Byte> leftover_; //max Size 40
     MemoryPool<RawBuffer>* bufferPool_;
     LFQueue<ReadBuffer>* bufferQueue_;
     int fd_;

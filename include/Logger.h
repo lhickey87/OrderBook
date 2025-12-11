@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdio>
 #include <thread>
 #include <iostream>
 #include "typedefs.h"
@@ -34,7 +35,6 @@ struct OrderModifyLog {
 };
 
 struct TradeLog {
-    OrderId orderId;
     Quantity quantity;
     Price price;
 };
@@ -70,6 +70,8 @@ class Logger {
 public:
     Logger(LFQueue<LogElement>* logQueue) : running_(true), queue_(logQueue) {
         logFile_ = std::fopen("orderbook.log", "w");
+        static char fileBuffer[512 * 1024]; // 512 KB
+        setvbuf(logFile_, fileBuffer, _IOFBF, sizeof(fileBuffer));
     }
 
     ~Logger() {
@@ -117,90 +119,132 @@ public:
         queue_->incWriteIndex();
     }
 
-    void logTrade(OrderId orderId, Quantity quantity, Price price) noexcept {
+    void logTrade(Quantity quantity, Price price) noexcept {
         LogElement* logElement = queue_->getWriteElement();
         logElement->timestamp = Timer::GetTimeNanos();
         logElement->type = LogType::TRADE;
-        logElement->u.trade = {orderId,quantity,price};
+        logElement->u.trade = {quantity,price};
     }
 
 private:
+    std::atomic<bool> running_;
+    LFQueue<LogElement>* queue_; // Queue of pointers
+    std::thread* loggerThread_;
+    std::FILE* logFile_;
 
     void consumeLogs() noexcept {
+        std::vector<char> buffer_;
+        buffer_.reserve(4096); //4kb reverse
         while (running_ && !queue_->isEmpty()){
             if (queue_->isEmpty())[[unlikely]]{
                 std::this_thread::yield();
             }
 
             auto logElement = queue_->getReadElement();
-            formatWrite(logElement);
+            formatWrite(logElement, buffer_);
         }
     }
 
-    void writeAdd(const LogElement* logElement) noexcept {
+    void writeAdd(const OrderAddLog& orderAdd, std::vector<char>& buffer) noexcept {
+        auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
+                                           "ADD ORDER: orderId: %llu, Quantity: %u, Price: %d \n",
+                                           orderAdd.orderId, orderAdd.quantity, orderAdd.quantity);
 
+        ASSERT(requiredBytes < buffer.size(), "Buffer is too small");
+        std::fwrite(buffer.data(),1, requiredBytes, logFile_);
     }
 
-    auto writeReduce(const LogElement* logElement) noexcept {
+    auto writeReduce(const OrderReduceLog& orderReduce, std::vector<char>& buffer) noexcept {
+        auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
+                                           "REDUCE ORDER: orderId: %llu, Shares Reduced: %u \n",
+                                           orderReduce.orderId, orderReduce.quantity);
 
+        ASSERT(requiredBytes < buffer.size(), "Buffer is too small");
+
+        std::fwrite(buffer.data(), 1, requiredBytes, logFile_);
     }
 
-    void writeFill(const LogElement* logElement) noexcept {
+    void writeFill(const OrderExecLog& fillLog, std::vector<char>& buffer) noexcept {
+        auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
+                                           "FILL ORDER: orderId: %llu, Shares Reduced: %u \n",
+                                           fillLog.orderId, fillLog.quantity);
 
+        ASSERT(requiredBytes < buffer.size(), "Buffer is too small");
+
+        std::fwrite(buffer.data(), 1, requiredBytes, logFile_);
     }
 
-    void writeModify(const LogElement* logElement) noexcept {
+    void writeModify(const OrderModifyLog& modifyLog, std::vector<char>& buffer) noexcept {
+        auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
+                                           "MODIFY ORDER: Old OrderId: %llu, New OrderId: %llu, New Price: %d, Quantity: %u \n",
+                                           modifyLog.oldOrderId, modifyLog.newOrderId, modifyLog.price, modifyLog.quantity);
 
+        ASSERT(requiredBytes < buffer.size(), "Buffer is too small, cannot stream formatted string into buffer");
+
+        std::fwrite(buffer.data(), 1, requiredBytes, logFile_);
     }
 
-    void writeExec(const LogElement* logElement) noexcept {
+    void writeExec(const OrderExecLog& execLog, std::vector<char>& buffer) noexcept {
+        auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
+                                           "EXECUTE ORDER: OrderId: %llu, Shares Executed: %u \n",
+                                           execLog.orderId, execLog.quantity);
 
+        ASSERT(requiredBytes < buffer.size(), "Buffer is too small");
+        std::fwrite(buffer.data(), 1, requiredBytes, logFile_);
     }
 
-    void writeOrderDelete(const LogElement* logElement) noexcept {}
+    void writeOrderDelete(const OrderDeleteLog& deleteLog,std::vector<char>& buffer) noexcept {
+        auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
+                                           "DELETE ORDER: Deleted Order OrderId: %llu \n",
+                                           deleteLog.orderId);
 
-    void writeTrade(const LogElement* logElement) noexcept {
+        ASSERT(requiredBytes < buffer.size(), "Buffer is too small");
 
+        std::fwrite(buffer.data(), 1, requiredBytes, logFile_);
     }
 
+    void writeTrade(const TradeLog& tradeLog, std::vector<char>& buffer) noexcept {
+        auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
+                                           "TRADE: Quantity: %u, Price: %d \n",
+                                           tradeLog.quantity, tradeLog.price);
 
-    void formatWrite(const LogElement* logElement){
+        ASSERT(requiredBytes < buffer.size(), "Buffer is too small");
+
+        std::fwrite(buffer.data(), 1, requiredBytes, logFile_);
+    }
+
+    void formatWrite(const LogElement* logElement, std::vector<char>& buffer){
         switch (logElement->type){
             case LogType::ORDER_ADD:
-            writeAdd(logElement);
+            writeAdd(logElement->u.orderAdd, buffer);
             break;
 
             case LogType::ORDER_REDUCE:
-            writeReduce(logElement);
+            writeReduce(logElement->u.orderReduce, buffer);
             break;
 
             case LogType::ORDER_FILL:
-            writeFill(logElement);
+            writeFill(logElement->u.orderExec, buffer);
             break;
 
             case LogType::ORDER_MODIFY:
-            writeModify(logElement);
+            writeModify(logElement->u.orderModify, buffer);
             break;
 
             case LogType::ORDER_EXEC:
-            writeExec(logElement);
+            writeExec(logElement->u.orderExec, buffer);
             break;
 
             case LogType::ORDER_DELETE:
-            writeOrderDelete(logElement);
+            writeOrderDelete(logElement->u.orderDelete, buffer);
             break;
 
             case LogType::TRADE:
-            writeTrade(logElement);
+            writeTrade(logElement->u.trade, buffer);
             break;
 
             case LogType::INFO_MSG:
             break;
         }
     }
-
-    std::atomic<bool> running_;
-    LFQueue<LogElement>* queue_; // Queue of pointers
-    std::thread* loggerThread_;
-    std::FILE* logFile_;
 };
