@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <thread>
 #include <iostream>
+#include "threads.h"
 #include "typedefs.h"
 #include "LFQueue.h"
 #include "../Benchmark/Time.h"
@@ -47,7 +48,7 @@ enum class LogType {
     ORDER_MODIFY,
     ORDER_EXEC,
     TRADE,
-    INFO_MSG // Fallback for generic text
+    STOP
 };
 
 // 3. The LogElement (The "Union" Wrapper)
@@ -66,16 +67,21 @@ struct LogElement {
     } u;
 };
 
+using LogQueue = LFQueue<LogElement>;
+
 class Logger {
 public:
-    Logger(LFQueue<LogElement>* logQueue) : running_(true), queue_(logQueue) {
+    Logger(LFQueue<LogElement>* logQueue) : queue_(logQueue) {
         logFile_ = std::fopen("orderbook.log", "w");
         static char fileBuffer[512 * 1024]; // 512 KB
         setvbuf(logFile_, fileBuffer, _IOFBF, sizeof(fileBuffer));
     }
 
+    void start(int coreId) noexcept {
+        ASSERT(Threads::createThread(coreId, "Logger Thread", [this](){run();}) != nullptr, "Unable to start logger thread");
+    }
+
     ~Logger() {
-        running_ = false;
         if (logFile_) std::fclose(logFile_);
     }
 
@@ -124,24 +130,26 @@ public:
         logElement->timestamp = Timer::GetTimeNanos();
         logElement->type = LogType::TRADE;
         logElement->u.trade = {quantity,price};
+        queue_->incWriteIndex();
     }
 
 private:
-    std::atomic<bool> running_;
-    LFQueue<LogElement>* queue_; // Queue of pointers
-    std::thread* loggerThread_;
+    LogQueue* queue_; // Queue of pointers
     std::FILE* logFile_;
 
-    void consumeLogs() noexcept {
+    void run() noexcept {
         std::vector<char> buffer_;
-        buffer_.reserve(4096); //4kb reverse
-        while (running_ && !queue_->isEmpty()){
-            if (queue_->isEmpty())[[unlikely]]{
-                std::this_thread::yield();
-            }
+
+        buffer_.reserve(4096);
+        while (true){
+            if (queue_->isEmpty())[[unlikely]]{ std::this_thread::yield();}
 
             auto logElement = queue_->getReadElement();
+
+            if (logElement->type == LogType::STOP) { break;}
+
             formatWrite(logElement, buffer_);
+            queue_->incReadIndex();
         }
     }
 
@@ -243,7 +251,7 @@ private:
             writeTrade(logElement->u.trade, buffer);
             break;
 
-            case LogType::INFO_MSG:
+            case LogType::STOP:
             break;
         }
     }

@@ -9,6 +9,10 @@
 #include "LFQueue.h"
 #include "threads.h"
 
+inline auto getMsgLength(const uint8_t* data){
+    return get16bit(data);
+}
+
 class DataFeed {
 
 public:
@@ -35,7 +39,7 @@ public:
     //this is the function that will be called from main loop via DataFeed->start()
     auto start(int coreId)
     {
-        readThread = createThread(coreId,"DataFeed",[this](){run();});
+        ASSERT(Threads::createThread(coreId,"DataFeed",[this](){run();}) != nullptr, "Unable to start DataFeed thread");
     }
 
     DataFeed() = delete;
@@ -44,7 +48,6 @@ public:
     DataFeed(const DataFeed&) = delete;
     DataFeed(DataFeed&&) = delete;
 private:
-
     inline void enqueueBuffer(RawBuffer* buffer, size_t size)
     {
         ReadBuffer* slot = bufferQueue_->getWriteElement();
@@ -75,5 +78,4 @@ private:
     LFQueue<ReadBuffer>* bufferQueue_;
     int fd_;
     size_t leftoverSize;
-    std::thread* readThread = nullptr;
 };

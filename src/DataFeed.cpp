@@ -6,7 +6,6 @@ void DataFeed::flushFinalBuffer(RawBuffer* buffer)
         enqueueBuffer(buffer, leftoverSize);
         bufferPool_->deallocate(buffer);
     }
-
     //this will be the terminating condition
     enqueueBuffer(nullptr, 0);
 }
@@ -39,9 +38,9 @@ void DataFeed::run()
 
 size_t getBoundary(const Byte* data, size_t validBytes) noexcept {
     auto remaining = validBytes;
-
     while (remaining > 0) {
-        auto msgLength = get16bit(data);
+        //2 bytes on end, first two bytes are length header (next length# bytes is the actual message)
+        auto msgLength = getMsgLength(data)+HEADER_BYTES;
 
         if (msgLength > remaining) [[unlikely]]
             break;

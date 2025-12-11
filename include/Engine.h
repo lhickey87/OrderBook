@@ -1,13 +1,14 @@
 #pragma once
 #include "Logger.h"
 #include "Orderbook.h"
-#include "typedefs.h"
 #include "Message.h"
-#include "threads.h"
 #include <atomic>
 #include <cstdint>
 #include <unordered_map>
 
+inline auto getMsgLength(const Byte* data){
+    return get16bit(data);
+}
 
 struct ReadBuffer;
 template<typename T> class LFQueue;
@@ -29,9 +30,8 @@ public:
 
     void run();
     auto start(int coreId){
-        createThread(coreId, "Engine", [this](){run();});
+        ASSERT(Threads::createThread(coreId, "Engine", [this](){run();}) != nullptr, "Failed starting Engine Thread");
     };
-
 
     auto readMessage();
     void handleMessage(const Byte* message, MessageType type);
@@ -43,5 +43,5 @@ private:
     Orderbook* orderBook_;
     MemoryPool<RawBuffer>* bufferPool_;
     BufferQueue* bufferQueue_;
-    LFQueue<std::string>* logQueue_;
+    LFQueue<LogElement>* logQueue_;
 };

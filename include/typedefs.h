@@ -14,12 +14,12 @@ using Time = uint64_t;
 using OrderId = std::uint64_t;
 using TickerId = uint16_t;
 
-//will have to benchmark different Buffer Sizes to see tradeoff between fitting everything in cache and
-// having to access from lock-free queue more frequently
 constexpr size_t BUFFER_SIZE = 1 << 15;
 constexpr size_t MAXLEVELS = 1 << 10;
 constexpr size_t MAX_ORDERS = 1 << 20;
 constexpr size_t MAX_BUFFERS = 64;
+
+static constexpr auto HEADER_BYTES = 2;
 
 using RawBuffer = std::array<uint8_t,BUFFER_SIZE>;
 

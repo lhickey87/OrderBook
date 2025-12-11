@@ -1,4 +1,3 @@
-
 #include "../include/Engine.h"
 #include "../include/DataFeed.h"
 #include <cstdlib>
@@ -26,8 +25,8 @@ int main(){
     BufferQueue bufferQueue(MAX_BUFFERS);
     MemoryPool<RawBuffer> bufferPool(1024);
 
-    logger = new Logger(&logQueue,"Orderbook.log");
-    //logger->start(-1);
+    logger = new Logger(&logQueue);
+    logger->start(-1);
 
     const std::string fileName = "Data/APPLE_ITCH_DATA";
 
