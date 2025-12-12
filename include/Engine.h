@@ -18,12 +18,10 @@ using BufferQueue = LFQueue<ReadBuffer>;
 class Engine {
 
 public:
-    explicit Engine(MemoryPool<RawBuffer>* bufferPool,LogQueue* logQueue, BufferQueue* bufferQueue) :
+    explicit Engine(MemoryPool<RawBuffer>* bufferPool,Logger* logger, BufferQueue* bufferQueue) :
+        logger_(logger),
         orderBook_(new Orderbook()),
-        bufferPool_(bufferPool),
-        logQueue_(logQueue),
-        bufferQueue_(bufferQueue),
-        splicedMessage(50)
+        bufferPool_(bufferPool)
         {}
 
     ~Engine() {}
@@ -39,9 +37,9 @@ public:
 
 private:
     //we will need some sort of queue
-    std::vector<Byte> splicedMessage;
+    Logger* logger_;
+    std::vector<Byte> splicedMessage{};
     Orderbook* orderBook_;
     MemoryPool<RawBuffer>* bufferPool_;
     BufferQueue* bufferQueue_;
-    LFQueue<LogElement>* logQueue_;
 };

@@ -11,6 +11,7 @@ void Engine::run(){
         handleBuffer(bufPtr);
         bufferQueue_->incReadIndex();
     }
+    logger_->logStop();
 }
 
 void Engine::handleBuffer(const ReadBuffer* bufPtr) {
@@ -39,6 +40,7 @@ void Engine::handleMessage(const Byte* message,MessageType type){
         case (MessageType::ADD_ORDER): {
             auto msg = AddOrderMessage::parseMessage(message);
             orderBook_->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_);
+            logger_->logOrderAdd(msg.orderId_, msg.orderQuantity_, msg.price_, msg.side_);
             message += AddOrderMessage::LENGTH + HEADER_BYTES;
             break;
         }
@@ -46,6 +48,7 @@ void Engine::handleMessage(const Byte* message,MessageType type){
         case(MessageType::ADD_ORDER_MPID): {
             auto msg = IdAddOrderMessage::parseMessage(message);
             orderBook_->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_, msg.clientId_);
+            logger_->logOrderAdd(msg.orderId_, msg.orderQuantity_, msg.price_, msg.side_);
             message += AddOrderMessage::LENGTH + HEADER_BYTES;
             break;
         }
@@ -53,6 +56,7 @@ void Engine::handleMessage(const Byte* message,MessageType type){
         case(MessageType::DELETE_ORDER): {
             auto msg = DeleteMessage::parseMessage(message);
             orderBook_->deleteOrder(msg.cancelOrderId);
+            logger_->logOrderDelete(msg.cancelOrderId);
             message += DeleteMessage::LENGTH + HEADER_BYTES;
             break;
         }
@@ -60,6 +64,7 @@ void Engine::handleMessage(const Byte* message,MessageType type){
         case(MessageType::EXECUTE_ORDER): {
             auto msg = ExecMessage::parseMessage(message);
             orderBook_->executeOrder(msg.orderId_,msg.numShares);
+            logger_->logOrderExec(msg.orderId_, msg.numShares);
             message += ExecMessage::LENGTH + HEADER_BYTES;
             break;
         }
@@ -67,6 +72,7 @@ void Engine::handleMessage(const Byte* message,MessageType type){
         case(MessageType::EXECUTE_ORDER_WITH_PRICE): {
             auto msg = ExecPriceMessage::parseMessage(message);
             orderBook_->executeOrderAtPrice(msg.orderId_,msg.numShares, msg.execPrice);
+            logger_->logOrderExec(msg.orderId_, msg.numShares);
             message += ExecPriceMessage::LENGTH + HEADER_BYTES;
             break;
         }
@@ -74,6 +80,7 @@ void Engine::handleMessage(const Byte* message,MessageType type){
         case(MessageType::REDUCE_ORDER): {
             auto msg = ReduceOrderMessage::parseMessage(message);
             orderBook_->reduceOrder(msg.orderId_,msg.cancelledShares);
+            logger_->logOrderReduce(msg.orderId_, msg.cancelledShares);
             message += ReduceOrderMessage::LENGTH + HEADER_BYTES;
             break;
         }
@@ -81,14 +88,14 @@ void Engine::handleMessage(const Byte* message,MessageType type){
         case(MessageType::REPLACE_ORDER): {
             auto msg = ReplaceMessage::parseMessage(message);
             orderBook_->modifyOrder(msg.oldOrderId, msg.newOrderId,msg.newPrice,msg.numShares);
+            logger_->logOrderModify(msg.oldOrderId, msg.newOrderId, msg.numShares, msg.newPrice);
             message += ReduceOrderMessage::LENGTH + HEADER_BYTES;
             break;
         }
 
         case(MessageType::TRADE): {
             auto msg = TradeMessage::parseMessage(message);
-            //have to LOG this trade, a message for Order Executed would have been processed prior to this
-            //logger.log
+            logger_->logTrade(msg.sharesMatched, msg.price_);
             message += TradeMessage::LENGTH + HEADER_BYTES;
             break;
         }

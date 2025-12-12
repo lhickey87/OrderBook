@@ -15,6 +15,9 @@ void shutDown(){
     delete dataFeed;
     dataFeed = nullptr;
     //call methods to stop each of these threads
+    delete logger;
+    logger = nullptr;
+
     exit(EXIT_SUCCESS);
 }
 

@@ -11,7 +11,7 @@ struct OrderAddLog {
     OrderId orderId;
     Price price;
     Quantity quantity;
-    char side; // 'B' or 'S'
+    Side side; // 'B' or 'S'
 };
 
 struct OrderExecLog {
@@ -63,7 +63,6 @@ struct LogElement {
         OrderDeleteLog orderDelete;
         OrderModifyLog orderModify;
         TradeLog trade;
-        char genericMsg[64]; // Fallback fixed buffer
     } u;
 };
 
@@ -78,18 +77,19 @@ public:
     }
 
     void start(int coreId) noexcept {
-        ASSERT(Threads::createThread(coreId, "Logger Thread", [this](){run();}) != nullptr, "Unable to start logger thread");
+        loggerThread_ = Threads::createThread(coreId, "Logger Thread", [this](){run();});
+        ASSERT(loggerThread_ != nullptr, "Logger Thread Unable to start");
     }
 
     ~Logger() {
         if (logFile_) std::fclose(logFile_);
     }
 
-    void logOrderAdd(OrderId oid, Price price, Quantity qty, char side) noexcept {
-        auto elem = queue_->getWriteElement();
-        elem->timestamp = Timer::GetTimeNanos(); // Use your fast timer
-        elem->type = LogType::ORDER_ADD;
-        elem->u.orderAdd = {oid, price, qty, side};
+    void logOrderAdd(OrderId oid, Price price, Quantity quantity, Side side) noexcept {
+        auto logElement = queue_->getWriteElement();
+        logElement->timestamp = Timer::GetTimeNanos(); // Use your fast timer
+        logElement->type = LogType::ORDER_ADD;
+        logElement->u = {oid,price,quantity,side};
         queue_->incWriteIndex();
     }
 
@@ -97,6 +97,14 @@ public:
         LogElement* logElement = queue_->getWriteElement();
         logElement->timestamp = Timer::GetTimeNanos();
         logElement->type = LogType::ORDER_FILL;
+        logElement->u.orderReduce = {orderId, quantity};
+        queue_->incWriteIndex();
+    }
+
+    void logOrderReduce(OrderId orderId, Quantity quantity) noexcept {
+        LogElement* logElement = queue_->getWriteElement();
+        logElement->timestamp = Timer::GetTimeNanos();
+        logElement->type = LogType::ORDER_REDUCE;
         logElement->u.orderReduce = {orderId, quantity};
         queue_->incWriteIndex();
     }
@@ -133,9 +141,17 @@ public:
         queue_->incWriteIndex();
     }
 
+    void logStop() noexcept {
+        LogElement* logElement = queue_->getWriteElement();
+        logElement->timestamp = Timer::GetTimeNanos();
+        logElement->type = LogType::STOP;
+        queue_->incWriteIndex();
+    }
+
 private:
     LogQueue* queue_; // Queue of pointers
     std::FILE* logFile_;
+    std::thread* loggerThread_;
 
     void run() noexcept {
         std::vector<char> buffer_;
