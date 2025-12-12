@@ -84,7 +84,7 @@ struct Message<MessageType::ADD_ORDER> {
 
     static Message parseMessage(const Byte* bufPtr){
     return AddOrderMessage(getTime(bufPtr+5), getOrderId(bufPtr+11), getTicker(bufPtr+24),
-                                           getQuantity(bufPtr+20), getPrice(bufPtr+32), getSide(bufPtr+19));
+                           getQuantity(bufPtr+20), getPrice(bufPtr+32), getSide(bufPtr+19));
     }
 
     auto print(std::ostream& outputStream) const {

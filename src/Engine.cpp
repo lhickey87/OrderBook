@@ -16,20 +16,24 @@ void Engine::run(){
 
 void Engine::handleBuffer(const ReadBuffer* bufPtr) {
     size_t remainingBytes = bufPtr->size;
-    const Byte* buffer = bufPtr->buffer->data(); //this is the actual std::array of chars
+    const Byte* buffer = bufPtr->buffer->data();
 
-    auto length = getMsgLength(buffer)+HEADER_BYTES;
-    buffer += HEADER_BYTES;
-    while (remainingBytes > 0){
+    while (remainingBytes > 0) {
 
-        if (length > remainingBytes) [[unlikely]]{
-            std::memcpy(&splicedMessage, buffer, remainingBytes);
+        uint16_t msgLen = getMsgLength(buffer);   // reads bytes [0..1]
+        size_t totalLen = msgLen + HEADER_BYTES;  // HEADER_BYTES = 3
+
+        if (totalLen > remainingBytes) [[unlikely]] {
+            // message is split across buffers -> splice
+            std::memcpy(splicedMessage.data(), buffer, remainingBytes);
             break;
         }
 
+        buffer += HEADER_BYTES;
+        // type is at byte index 2 (AFTER the 2-byte length header)
         handleMessage(buffer, MessageType(*buffer));
-        remainingBytes -= length;
-        length = getMsgLength(buffer)+HEADER_BYTES;
+        buffer += msgLen;
+        remainingBytes -= totalLen;
     }
 }
 
@@ -41,7 +45,6 @@ void Engine::handleMessage(const Byte* message,MessageType type){
             auto msg = AddOrderMessage::parseMessage(message);
             orderBook_->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_);
             logger_->logOrderAdd(msg.orderId_, msg.orderQuantity_, msg.price_, msg.side_);
-            message += AddOrderMessage::LENGTH + HEADER_BYTES;
             break;
         }
 
@@ -49,7 +52,6 @@ void Engine::handleMessage(const Byte* message,MessageType type){
             auto msg = IdAddOrderMessage::parseMessage(message);
             orderBook_->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_, msg.clientId_);
             logger_->logOrderAdd(msg.orderId_, msg.orderQuantity_, msg.price_, msg.side_);
-            message += AddOrderMessage::LENGTH + HEADER_BYTES;
             break;
         }
 
@@ -57,7 +59,6 @@ void Engine::handleMessage(const Byte* message,MessageType type){
             auto msg = DeleteMessage::parseMessage(message);
             orderBook_->deleteOrder(msg.cancelOrderId);
             logger_->logOrderDelete(msg.cancelOrderId);
-            message += DeleteMessage::LENGTH + HEADER_BYTES;
             break;
         }
 
@@ -65,7 +66,6 @@ void Engine::handleMessage(const Byte* message,MessageType type){
             auto msg = ExecMessage::parseMessage(message);
             orderBook_->executeOrder(msg.orderId_,msg.numShares);
             logger_->logOrderExec(msg.orderId_, msg.numShares);
-            message += ExecMessage::LENGTH + HEADER_BYTES;
             break;
         }
 
@@ -73,7 +73,6 @@ void Engine::handleMessage(const Byte* message,MessageType type){
             auto msg = ExecPriceMessage::parseMessage(message);
             orderBook_->executeOrderAtPrice(msg.orderId_,msg.numShares, msg.execPrice);
             logger_->logOrderExec(msg.orderId_, msg.numShares);
-            message += ExecPriceMessage::LENGTH + HEADER_BYTES;
             break;
         }
 
@@ -81,7 +80,6 @@ void Engine::handleMessage(const Byte* message,MessageType type){
             auto msg = ReduceOrderMessage::parseMessage(message);
             orderBook_->reduceOrder(msg.orderId_,msg.cancelledShares);
             logger_->logOrderReduce(msg.orderId_, msg.cancelledShares);
-            message += ReduceOrderMessage::LENGTH + HEADER_BYTES;
             break;
         }
 
@@ -89,14 +87,12 @@ void Engine::handleMessage(const Byte* message,MessageType type){
             auto msg = ReplaceMessage::parseMessage(message);
             orderBook_->modifyOrder(msg.oldOrderId, msg.newOrderId,msg.newPrice,msg.numShares);
             logger_->logOrderModify(msg.oldOrderId, msg.newOrderId, msg.numShares, msg.newPrice);
-            message += ReduceOrderMessage::LENGTH + HEADER_BYTES;
             break;
         }
 
         case(MessageType::TRADE): {
             auto msg = TradeMessage::parseMessage(message);
             logger_->logTrade(msg.sharesMatched, msg.price_);
-            message += TradeMessage::LENGTH + HEADER_BYTES;
             break;
         }
     }
