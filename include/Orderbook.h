@@ -15,7 +15,7 @@ public:
 
     void deleteOrder(OrderId orderId); //cancel from order's hashmap by setting to nullptr
 
-    void executeOrderAtPrice(OrderId orderId, Quantity quantity, Price price);
+    void executeOrderAtPrice(OrderId orderId, Quantity quantity);
 
     void executeOrder(OrderId orderId, Quantity quantity);
 

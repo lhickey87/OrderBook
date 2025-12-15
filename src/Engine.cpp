@@ -18,22 +18,26 @@ void Engine::handleBuffer(const ReadBuffer* bufPtr) {
     size_t remainingBytes = bufPtr->size;
     const Byte* buffer = bufPtr->buffer->data();
 
+    uint16_t msgLen;
+    size_t totalLength; //this length includes LENGTH header
+
     while (remainingBytes > 0) {
 
-        uint16_t msgLen = getMsgLength(buffer);   // reads bytes [0..1]
-        size_t totalLen = msgLen + HEADER_BYTES;  // HEADER_BYTES = 3
+        msgLen = getMsgLength(buffer);   // reads bytes [0..1]
+        totalLength = msgLen + HEADER_BYTES;  // HEADER_BYTES = 3
 
-        if (totalLen > remainingBytes) [[unlikely]] {
+        if (totalLength > remainingBytes) [[unlikely]] {
             // message is split across buffers -> splice
             std::memcpy(splicedMessage.data(), buffer, remainingBytes);
             break;
         }
 
+        // Skipping the length header (2bytes) to reach start of ITCH message
         buffer += HEADER_BYTES;
         // type is at byte index 2 (AFTER the 2-byte length header)
         handleMessage(buffer, MessageType(*buffer));
         buffer += msgLen;
-        remainingBytes -= totalLen;
+        remainingBytes -= totalLength;
     }
 }
 
@@ -71,7 +75,7 @@ void Engine::handleMessage(const Byte* message,MessageType type){
 
         case(MessageType::EXECUTE_ORDER_WITH_PRICE): {
             auto msg = ExecPriceMessage::parseMessage(message);
-            orderBook_->executeOrderAtPrice(msg.orderId_,msg.numShares, msg.execPrice);
+            orderBook_->executeOrderAtPrice(msg.orderId_,msg.numShares);
             logger_->logOrderExec(msg.orderId_, msg.numShares);
             break;
         }

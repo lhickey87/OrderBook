@@ -2,7 +2,7 @@
 
 void Orderbook::add(OrderId orderId, Side side, Price price, Quantity quantity, ClientId client){
     //in must allocate an orderFirst
-    Order* newOrder = orderPool.Allocate(orderId,side,price,quantity,client);
+    Order* newOrder = orderPool.Allocate(orderId,price,quantity,client, side);
 
     if (nextOrderId != newOrder->orderId_){
         //error here, maybe try to ASSERT so we don't deal with this at run time
@@ -28,7 +28,7 @@ void Orderbook::deleteOrder(OrderId orderId){
     orderPool.deallocate(order);
 }
 
-void Orderbook::executeOrderAtPrice(OrderId orderId, Quantity quantity, Price price){
+void Orderbook::executeOrderAtPrice(OrderId orderId, Quantity quantity){
     auto order = getOrder(orderId);
     //logger->log("order: {} executed at price:{} with quantity: {}");
     order->Fill(quantity);

@@ -1,20 +1,14 @@
-#include <string>
-#include <thread>
+#pragma once
 #include <fcntl.h>
 #include <unistd.h>
-#include <atomic>
 #include "typedefs.h"
 #include "MemoryPool.h"
 #include "Message.h"
 #include "LFQueue.h"
 #include "threads.h"
 
-inline auto getMsgLength(const uint8_t* data){
-    return get16bit(data);
-}
 
 class DataFeed {
-
 public:
     explicit DataFeed(MemoryPool<RawBuffer>* bufferPool, LFQueue<ReadBuffer>* bufferQueue, const std::string& fileName):
         leftover_(40),
@@ -31,16 +25,10 @@ public:
         ::close(fd_);
     }
 
-    void flushFinalBuffer(RawBuffer* buffer);
     //DataFeed should be entirely responsible for reading in buffers, and sending everything to ITCHParser to consume
-    size_t getBoundary(Byte* messagebuffer, size_t validBytes);
 
-    void run();
     //this is the function that will be called from main loop via DataFeed->start()
-    auto start(int coreId)
-    {
-        ASSERT(Threads::createThread(coreId,"DataFeed",[this](){run();}) != nullptr, "Unable to start DataFeed thread");
-    }
+    void start();
 
     DataFeed() = delete;
     DataFeed& operator=(const DataFeed&) = delete;
@@ -48,6 +36,9 @@ public:
     DataFeed(const DataFeed&) = delete;
     DataFeed(DataFeed&&) = delete;
 private:
+    void run();
+    void flushFinalBuffer(RawBuffer* buffer);
+    size_t getBoundary(const Byte* messagebuffer, int validBytes) noexcept;
     inline void enqueueBuffer(RawBuffer* buffer, size_t size)
     {
         ReadBuffer* slot = bufferQueue_->getWriteElement();

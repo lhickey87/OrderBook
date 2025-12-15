@@ -2,7 +2,9 @@
 #include <chrono>
 #include <format>
 #include <iostream>
+#include <string>
 #include <array>
+#include <thread>
 
 enum class Side {UNITIALIZED,BUY,SELL};
 
@@ -21,7 +23,7 @@ constexpr size_t MAX_BUFFERS = 64;
 
 static constexpr auto HEADER_BYTES = 2;
 
-using RawBuffer = std::array<uint8_t,BUFFER_SIZE>;
+using RawBuffer = std::array<Byte,BUFFER_SIZE>;
 
 struct ReadBuffer {
     RawBuffer* buffer;

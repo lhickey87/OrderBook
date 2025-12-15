@@ -76,8 +76,8 @@ public:
         setvbuf(logFile_, fileBuffer, _IOFBF, sizeof(fileBuffer));
     }
 
-    void start(int coreId) noexcept {
-        loggerThread_ = Threads::createThread(coreId, "Logger Thread", [this](){run();});
+    void start() noexcept {
+        loggerThread_ = Threads::createThread("Logger Thread", [this](){run();});
         ASSERT(loggerThread_ != nullptr, "Logger Thread Unable to start");
     }
 
@@ -89,7 +89,7 @@ public:
         auto logElement = queue_->getWriteElement();
         logElement->timestamp = Timer::GetTimeNanos(); // Use your fast timer
         logElement->type = LogType::ORDER_ADD;
-        logElement->u = {oid,price,quantity,side};
+        logElement->u.orderAdd = {oid,price,quantity,side};
         queue_->incWriteIndex();
     }
 
@@ -158,11 +158,16 @@ private:
 
         buffer_.reserve(4096);
         while (true){
-            if (queue_->isEmpty())[[unlikely]]{ std::this_thread::yield();}
 
             auto logElement = queue_->getReadElement();
+            if (!logElement){
+                std::this_thread::yield();
+            }
 
-            if (logElement->type == LogType::STOP) { break;}
+            if (logElement->type == LogType::STOP) {
+                queue_->incReadIndex();
+                break;
+            }
 
             formatWrite(logElement, buffer_);
             queue_->incReadIndex();
@@ -174,8 +179,9 @@ private:
                                            "ADD ORDER: orderId: %llu, Quantity: %u, Price: %d \n",
                                            orderAdd.orderId, orderAdd.quantity, orderAdd.quantity);
 
-        ASSERT(requiredBytes < buffer.size(), "Buffer is too small");
-        std::fwrite(buffer.data(),1, requiredBytes, logFile_);
+        ASSERT(static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer is too small");
+
+        std::fwrite(buffer.data(),sizeof(Byte), requiredBytes, logFile_);
     }
 
     auto writeReduce(const OrderReduceLog& orderReduce, std::vector<char>& buffer) noexcept {
@@ -183,9 +189,9 @@ private:
                                            "REDUCE ORDER: orderId: %llu, Shares Reduced: %u \n",
                                            orderReduce.orderId, orderReduce.quantity);
 
-        ASSERT(requiredBytes < buffer.size(), "Buffer is too small");
+        ASSERT(static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer is too small");
 
-        std::fwrite(buffer.data(), 1, requiredBytes, logFile_);
+        std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 
     void writeFill(const OrderExecLog& fillLog, std::vector<char>& buffer) noexcept {
@@ -193,9 +199,9 @@ private:
                                            "FILL ORDER: orderId: %llu, Shares Reduced: %u \n",
                                            fillLog.orderId, fillLog.quantity);
 
-        ASSERT(requiredBytes < buffer.size(), "Buffer is too small");
+        ASSERT(static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer is too small");
 
-        std::fwrite(buffer.data(), 1, requiredBytes, logFile_);
+        std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 
     void writeModify(const OrderModifyLog& modifyLog, std::vector<char>& buffer) noexcept {
@@ -203,9 +209,9 @@ private:
                                            "MODIFY ORDER: Old OrderId: %llu, New OrderId: %llu, New Price: %d, Quantity: %u \n",
                                            modifyLog.oldOrderId, modifyLog.newOrderId, modifyLog.price, modifyLog.quantity);
 
-        ASSERT(requiredBytes < buffer.size(), "Buffer is too small, cannot stream formatted string into buffer");
+        ASSERT(static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer is too small");
 
-        std::fwrite(buffer.data(), 1, requiredBytes, logFile_);
+        std::fwrite(buffer.data(),sizeof(Byte), requiredBytes, logFile_);
     }
 
     void writeExec(const OrderExecLog& execLog, std::vector<char>& buffer) noexcept {
@@ -213,8 +219,8 @@ private:
                                            "EXECUTE ORDER: OrderId: %llu, Shares Executed: %u \n",
                                            execLog.orderId, execLog.quantity);
 
-        ASSERT(requiredBytes < buffer.size(), "Buffer is too small");
-        std::fwrite(buffer.data(), 1, requiredBytes, logFile_);
+        ASSERT(static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer is too small");
+        std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 
     void writeOrderDelete(const OrderDeleteLog& deleteLog,std::vector<char>& buffer) noexcept {
@@ -222,9 +228,9 @@ private:
                                            "DELETE ORDER: Deleted Order OrderId: %llu \n",
                                            deleteLog.orderId);
 
-        ASSERT(requiredBytes < buffer.size(), "Buffer is too small");
+        ASSERT(static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer is too small");
 
-        std::fwrite(buffer.data(), 1, requiredBytes, logFile_);
+        std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 
     void writeTrade(const TradeLog& tradeLog, std::vector<char>& buffer) noexcept {
@@ -232,9 +238,13 @@ private:
                                            "TRADE: Quantity: %u, Price: %d \n",
                                            tradeLog.quantity, tradeLog.price);
 
-        ASSERT(requiredBytes < buffer.size(), "Buffer is too small");
+        ASSERT(static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer is too small");
+        std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
+    }
 
-        std::fwrite(buffer.data(), 1, requiredBytes, logFile_);
+    void writeStop(std::vector<char>& buffer) noexcept {
+        auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),"Trading Day Finished! \n");
+        std::fwrite(buffer.data(),sizeof(Byte), requiredBytes, logFile_);
     }
 
     void formatWrite(const LogElement* logElement, std::vector<char>& buffer){
@@ -268,6 +278,7 @@ private:
             break;
 
             case LogType::STOP:
+            writeStop(buffer);
             break;
         }
     }

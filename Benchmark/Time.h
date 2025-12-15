@@ -14,11 +14,11 @@ public:
         return (raw * info.numer) / info.denom;
     }
 
-    void StartTimer() {
+    inline void StartTimer() {
         startTime = mach_absolute_time();
     }
 
-    uint64_t getNanoDuration() const {
+    inline uint64_t getNanoDuration() const {
         uint64_t duration = mach_absolute_time() - startTime;
         return (duration * info.numer) / info.denom;
     }
@@ -31,6 +31,6 @@ private:
         });
     }
 
-    static mach_timebase_info_data_t info;
+    inline static mach_timebase_info_data_t info = {0,0};
     uint64_t startTime = 0;
 };

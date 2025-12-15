@@ -1,5 +1,9 @@
 #include "../include/DataFeed.h"
 
+void DataFeed::start() {
+    ASSERT(Threads::createThread("Data Feed Thread",[this](){run();}) != nullptr, "Unable to start Data Feed Thread");
+}
+
 void DataFeed::flushFinalBuffer(RawBuffer* buffer)
 {
     if (leftoverSize > 0) {
@@ -36,7 +40,7 @@ void DataFeed::run()
     }
 }
 
-size_t getBoundary(const Byte* data, size_t validBytes) noexcept {
+size_t DataFeed::getBoundary(const Byte* data, int validBytes) noexcept {
     auto remaining = validBytes;
     while (remaining > 0) {
         //2 bytes on end, first two bytes are length header (next length# bytes is the actual message)

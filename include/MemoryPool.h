@@ -7,8 +7,7 @@ class MemoryPool {
 
 public:
     //default constructs the object type we are storing in each of the (size) entries of our vector
-    explicit MemoryPool(size_t size){
-        pool_(size, T());
+    explicit MemoryPool(std::size_t size) : pool_(size) {
     }
 
     template<typename... Args>
@@ -24,7 +23,10 @@ public:
     }
 
     void deallocate(const T* element) noexcept {
-        const auto nextAvailable = (reinterpret_cast<Block*>(element)-&pool_[0]); //gives us the index of the block to deallocate
+        const auto blockPtr = reinterpret_cast<const Block*>(element);
+
+        const auto nextAvailable = blockPtr - &pool_[0];
+
         pool_[nextAvailable].isFreeBlock = true;
     }
 
@@ -36,7 +38,7 @@ public:
 private:
     struct Block {
         T data_;
-        bool isFreeBlock;
+        bool isFreeBlock = true;
     };
 
     auto updateNextIndex() noexcept {

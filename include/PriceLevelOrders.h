@@ -1,5 +1,6 @@
 #pragma once
 #include "Order.h"
+#include "typedefs.h"
 
 struct PriceLevelOrders {
     Side side_;
@@ -14,4 +15,9 @@ struct PriceLevelOrders {
         side_(side),
         price_(price),
         headOrder(head){}
+
+    PriceLevelOrders& operator=(PriceLevelOrders&&) = delete;
+    PriceLevelOrders(PriceLevelOrders&&) = delete;
+
+    PriceLevelOrders() = default;
 };

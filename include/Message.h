@@ -1,7 +1,7 @@
 #pragma once
-#include "typedefs.h"
 #include <memory>
 #include <ostream>
+#include "typedefs.h"
 #include "endian.h"
 
 enum class MessageType {
@@ -38,12 +38,14 @@ static auto getQuantity(const Byte* msgPtr){return get32bit(msgPtr);}
 static auto getPrice(const Byte* msgPtr){return get32bit(msgPtr);}
 static auto getTicker(const Byte* msgPtr){ return get64bit(msgPtr);}
 static auto getSide(const Byte* msgPtr){return Side(*msgPtr);}
-
 static Time getTime(const Byte* msgPtr){
     uint64_t result;
     Byte* memPtr = (Byte *)&result;
     std::memcpy(memPtr, msgPtr, 6);
     return (get64bit(memPtr) >> 16);
+}
+static inline auto getMsgLength(const Byte *data){
+    return get16bit(data);
 }
 
 template<MessageType msg>
@@ -94,13 +96,11 @@ struct Message<MessageType::ADD_ORDER> {
         << "Price: " << price_ << "\n"
         << "Ticker: " << stockTicker_ << "\n";
     }
-
 };
 
 using IdAddOrderMessage = Message<MessageType::ADD_ORDER_MPID>;
 template<>
 struct Message<MessageType::ADD_ORDER_MPID> {
-
     Message(Time time,OrderId orderId, Quantity quantity,
             TickerId ticker, Price price,ClientId clientId,
             Side side)
@@ -140,9 +140,9 @@ using ExecMessage = Message<MessageType::EXECUTE_ORDER>;
 template<>
 struct Message<MessageType::EXECUTE_ORDER> {
 
-    Message(Time time, OrderId orderId, uint64_t matchNum, Quantity quantity)
-        : time_(time),
-          orderId_(orderId),
+    Message(OrderId orderId, Time time, uint64_t matchNum, Quantity quantity)
+        : orderId_(orderId),
+          time_(time),
           matchNumber(matchNum),
           numShares(quantity){}
 
@@ -173,8 +173,8 @@ struct Message<MessageType::EXECUTE_ORDER_WITH_PRICE> {
             Quantity quantity, Price price)
             : time_(time),
               orderId_(orderId),
-              numShares(quantity),
               matchNumber(matchNum),
+              numShares(quantity),
               execPrice(price){}
 
     static constexpr uint16_t LENGTH = 36;
@@ -315,28 +315,8 @@ struct Message<MessageType::TRADE> {
     }
 };
 
-
 template <MessageType MsgType>
 std::ostream& operator<<(std::ostream& outputStream, const Message<MsgType>& msg){
     msg.print(outputStream);
     return outputStream;
 }
-
-struct MessageLookup {
-    // We use a helper function to populate the array at Compile Time
-    static constexpr std::array<Byte, 256> create() {
-        std::array<Byte, 256> table = {}; // Initialize all to 0
-
-        table[static_cast<uint8_t>(MessageType::ADD_ORDER)] = AddOrderMessage::LENGTH;
-        table[static_cast<uint8_t>(MessageType::ADD_ORDER_MPID)] = IdAddOrderMessage::LENGTH;
-        table[static_cast<uint8_t>(MessageType::EXECUTE_ORDER)] = ExecMessage::LENGTH;
-        table[static_cast<uint8_t>(MessageType::EXECUTE_ORDER_WITH_PRICE)] = ExecPriceMessage::LENGTH;
-        table[static_cast<uint8_t>(MessageType::REDUCE_ORDER)] = ReduceOrderMessage::LENGTH;
-        table[static_cast<uint8_t>(MessageType::DELETE_ORDER)] = DeleteMessage::LENGTH;
-        table[static_cast<uint8_t>(MessageType::REPLACE_ORDER)] = ReplaceMessage::LENGTH;
-        table[static_cast<uint8_t>(MessageType::TRADE)] = TradeMessage::LENGTH;
-        return table;
-    }
-};
-
-static const auto MsgLengthMap = MessageLookup::create();

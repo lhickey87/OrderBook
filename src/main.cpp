@@ -8,7 +8,6 @@ DataFeed* dataFeed = nullptr;
 
 //SHOULD  BE CALLED ONCE ENGINE IS DONE AND LOGGER IS FINISHED
 void shutDown(){
-
     delete engine;
     engine = nullptr;
 
@@ -29,15 +28,15 @@ int main(){
     MemoryPool<RawBuffer> bufferPool(1024);
 
     logger = new Logger(&logQueue);
-    logger->start(-1);
+    logger->start();
 
     const std::string fileName = "Data/APPLE_ITCH_DATA";
 
     dataFeed = new DataFeed(&bufferPool, &bufferQueue,fileName);
-    dataFeed->start(-1);
+    dataFeed->start();
 
-    engine = new Engine(&bufferPool,&logQueue,&bufferQueue);
-    engine->start(-1);
+    engine = new Engine(&bufferPool,logger,&bufferQueue);
+    engine->start();
 
-
+    return EXIT_SUCCESS;
 }
