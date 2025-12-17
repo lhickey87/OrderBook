@@ -1,4 +1,5 @@
 #pragma once
+#include "LFQueue.h"
 #include <chrono>
 #include <format>
 #include <iostream>
@@ -23,12 +24,14 @@ constexpr size_t MAX_BUFFERS = 64;
 
 static constexpr auto HEADER_BYTES = 2;
 
-using RawBuffer = std::array<Byte,BUFFER_SIZE>;
+using RawBuffer = std::array<Byte,BUFFER_SIZE+40>;
 
 struct ReadBuffer {
     RawBuffer* buffer;
     size_t size;
 };
+
+using BufferQueue = LFQueue<ReadBuffer>;
 
 inline auto ASSERT(bool cond, const std::string& msg) noexcept {
     if (!cond) [[unlikely]]{

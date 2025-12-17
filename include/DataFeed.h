@@ -1,6 +1,9 @@
 #pragma once
+#include <exception>
 #include <fcntl.h>
 #include <unistd.h>
+#include <map>
+#include <unordered_map>
 #include "typedefs.h"
 #include "MemoryPool.h"
 #include "Message.h"
@@ -10,14 +13,15 @@
 
 class DataFeed {
 public:
-    explicit DataFeed(MemoryPool<RawBuffer>* bufferPool, LFQueue<ReadBuffer>* bufferQueue, const std::string& fileName):
-        leftover_(40),
-        bufferPool_(bufferPool),
-        bufferQueue_(bufferQueue)
+    //explicit DataFeed(MemoryPool<RawBuffer>* bufferPool, LFQueue<ReadBuffer>* bufferQueue, const std::string& fileName):
+    explicit DataFeed(MemoryPool<RawBuffer>* pool,BufferQueue* buffer, const std::string& fileName):
+        leftover_(256),
+        bufferPool_(pool),
+        bufferQueue_(buffer)
         {
             fd_ = ::open(fileName.c_str(),O_RDONLY);
-            if (fd_ < 0){
-                //deal with error
+            if (fd_ != 1){
+                std::cout << "file opened \n";
             }
         }
 
@@ -25,10 +29,16 @@ public:
         ::close(fd_);
     }
 
-    //DataFeed should be entirely responsible for reading in buffers, and sending everything to ITCHParser to consume
-
     //this is the function that will be called from main loop via DataFeed->start()
-    void start();
+    void start(){
+        dataThread = std::thread([this](){run();});
+    }
+
+    void join(){
+        if (dataThread.joinable()){
+            dataThread.join();
+        }
+    }
 
     DataFeed() = delete;
     DataFeed& operator=(const DataFeed&) = delete;
@@ -36,15 +46,23 @@ public:
     DataFeed(const DataFeed&) = delete;
     DataFeed(DataFeed&&) = delete;
 private:
+    std::thread dataThread;
+    std::vector<Byte> leftover_; //max Size 40
+    MemoryPool<RawBuffer>* bufferPool_;
+    BufferQueue* bufferQueue_;
+    int fd_;
+    size_t leftoverSize = 0;
+
     void run();
     void flushFinalBuffer(RawBuffer* buffer);
-    size_t getBoundary(const Byte* messagebuffer, int validBytes) noexcept;
+    size_t getBoundary(const Byte* messagebuffer, size_t validBytes) noexcept;
     inline void enqueueBuffer(RawBuffer* buffer, size_t size)
     {
         ReadBuffer* slot = bufferQueue_->getWriteElement();
         slot->buffer = buffer;
         slot->size   = size;
         bufferQueue_->incWriteIndex();
+        std::cout << "added to queue" << std::endl;
     }
 
     inline void prependLeftover(Byte* dst) noexcept
@@ -60,13 +78,9 @@ private:
             return;
         }
 
-        leftoverSize = partialSize;
-        std::memcpy(leftover_.data(), src, partialSize);
-    }
+        ASSERT(partialSize <= leftover_.capacity(), "End of message too large for our leftover buffer");
 
-    std::vector<Byte> leftover_; //max Size 40
-    MemoryPool<RawBuffer>* bufferPool_;
-    LFQueue<ReadBuffer>* bufferQueue_;
-    int fd_;
-    size_t leftoverSize;
-};
+        std::memcpy(leftover_.data(), src, partialSize);
+        leftoverSize = partialSize;   // store the actual number of bytes
+    }
+   };

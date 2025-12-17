@@ -24,10 +24,10 @@ public:
     void modifyOrder(OrderId oldOrderId, OrderId newOrderId, Price newPrice, Quantity quantity);
     //telling compiler not to generate any special member funtionms
    //Orderbook() = delete;
-    Order* getOrder(OrderId orderId) noexcept {return orderMap.at(orderId);}
+    Order* getOrder(OrderId orderId) noexcept {return orderMap[orderId];}
 
     auto getPriceLevel(Price price) noexcept {
-        return priceLevelsMap.at(priceToIndex(price));
+        return priceLevelsMap[priceToIndex(price)];
     }
 
     PriceLevelOrders* getSide(Side side) const {
@@ -57,7 +57,7 @@ private:
 
     void addOrder(Order* order) noexcept {
         //this will be called if our order is only partially filled, or not filled at all
-        const auto levelOrders = getPriceLevel(order->price_);
+        const auto levelOrders = priceLevelsMap[order->price_];
         if (!levelOrders){
             order->nextOrder_ = order->prevOrder_ = order;
             auto newPriceLevel = priceLevelPool.Allocate(order->side_, order->price_, order);

@@ -16,6 +16,7 @@ public:
 
         T* valueAtBlock = &(memoryBlock->data_);
         valueAtBlock = new(valueAtBlock) T(args...);
+        memoryBlock->isFreeBlock = false;
 
         updateNextIndex();
 

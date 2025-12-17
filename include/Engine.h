@@ -10,13 +10,11 @@
 struct ReadBuffer;
 template<typename T> class LFQueue;
 
-using BufferQueue = LFQueue<ReadBuffer>;
-
 class Engine {
 
 public:
-    explicit Engine(MemoryPool<RawBuffer>* bufferPool,Logger* logger, BufferQueue* bufferQueue) :
-        logger_(logger),
+    explicit Engine(MemoryPool<RawBuffer>* bufferPool, BufferQueue* bufferQueue) :
+        //logger_(logger),
         orderBook_(new Orderbook()),
         bufferPool_(bufferPool),
         bufferQueue_(bufferQueue)
@@ -26,8 +24,14 @@ public:
 
     void run();
     auto start(){
-        ASSERT(Threads::createThread("Engine", [this](){run();}) != nullptr, "Failed starting Engine Thread");
+        engineThread = std::thread([this](){run();});
     };
+
+    void join(){
+        if (engineThread.joinable()){
+            engineThread.join();
+        }
+    }
 
     auto readMessage();
     void handleMessage(const Byte* message, MessageType type);
@@ -41,6 +45,7 @@ public:
 
 private:
     //we will need some sort of queue
+    std::thread engineThread;
     Logger* logger_;
     std::vector<Byte> splicedMessage{};
     Orderbook* orderBook_;

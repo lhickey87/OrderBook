@@ -40,6 +40,10 @@ struct TradeLog {
     Price price;
 };
 
+struct StopLog {
+    char message[64];
+};
+
 enum class LogType {
     ORDER_ADD,
     ORDER_DELETE,
@@ -63,6 +67,7 @@ struct LogElement {
         OrderDeleteLog orderDelete;
         OrderModifyLog orderModify;
         TradeLog trade;
+        StopLog stop;
     } u;
 };
 
@@ -77,8 +82,13 @@ public:
     }
 
     void start() noexcept {
-        loggerThread_ = Threads::createThread("Logger Thread", [this](){run();});
-        ASSERT(loggerThread_ != nullptr, "Logger Thread Unable to start");
+        loggerThread_ = std::thread([this](){run();});
+    }
+
+    void join(){
+        if (loggerThread_.joinable()){
+            loggerThread_.join();
+        }
     }
 
     ~Logger() {
@@ -145,13 +155,14 @@ public:
         LogElement* logElement = queue_->getWriteElement();
         logElement->timestamp = Timer::GetTimeNanos();
         logElement->type = LogType::STOP;
+        logElement->u.stop = {"Finished"};
         queue_->incWriteIndex();
     }
 
 private:
     LogQueue* queue_; // Queue of pointers
     std::FILE* logFile_;
-    std::thread* loggerThread_;
+    std::thread loggerThread_;
 
     void run() noexcept {
         std::vector<char> buffer_;
@@ -162,6 +173,7 @@ private:
             auto logElement = queue_->getReadElement();
             if (!logElement){
                 std::this_thread::yield();
+                continue;
             }
 
             if (logElement->type == LogType::STOP) {

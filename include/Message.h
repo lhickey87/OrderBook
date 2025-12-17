@@ -13,7 +13,9 @@ enum class MessageType {
     DELETE_ORDER = 'D',
     REPLACE_ORDER = 'U',
     TRADE = 'P',
+    BULLSHIT = 'B'
 };
+
 
 static auto get16bit(const Byte* memPtr){
     uint16_t result;
@@ -320,3 +322,27 @@ std::ostream& operator<<(std::ostream& outputStream, const Message<MsgType>& msg
     msg.print(outputStream);
     return outputStream;
 }
+
+
+static constexpr std::array<MessageType, 45> typeTable() {
+    std::array<MessageType, 45> typeMap{};
+
+    // initialize all entries to a default value if needed
+    int count = 0;
+    while (count < 45) {
+        typeMap[count] = MessageType::BULLSHIT; // or some invalid/default type
+        count++;
+    }
+
+    typeMap[DeleteMessage::LENGTH] = MessageType::DELETE_ORDER;
+    typeMap[ReduceOrderMessage::LENGTH] = MessageType::REDUCE_ORDER;
+    typeMap[ReplaceMessage::LENGTH] = MessageType::REPLACE_ORDER;
+    typeMap[AddOrderMessage::LENGTH] = MessageType::ADD_ORDER;
+    typeMap[IdAddOrderMessage::LENGTH] = MessageType::ADD_ORDER_MPID;
+    typeMap[ExecMessage::LENGTH] = MessageType::EXECUTE_ORDER;
+    typeMap[TradeMessage::LENGTH] = MessageType::TRADE;
+
+    return typeMap;
+}
+
+static constexpr std::array<MessageType,45> MessageTable = typeTable();

@@ -19,3 +19,14 @@ In order to squeeze as much performance as possible out of every component in th
 - [When Nanoseconds Matter: Ultrafast Trading Systems in C++ - David Gross - CppCon 2024](https://www.youtube.com/watch?v=sX2nF1fW7kI&t=1994s)
 - [Trading at light speed: designing low latency systems in C++ - David Gross - Meeting C++ 2022](https://www.youtube.com/watch?v=8uAW5FQtcvE&t=1854s)
 - [An Introduction to Limit Order Books](https://www.machow.ski/posts/2021-07-18-introduction-to-limit-order-books/#ordertypes)
+
+
+if (ENABLE_TSAN)
+    message(STATUS "ThreadSanitizer enabled")
+
+    target_compile_options(orderbook_lib PRIVATE -fsanitize=thread)
+    target_link_options(orderbook_lib PRIVATE -fsanitize=thread)
+
+    target_compile_options(orderbook PRIVATE -fsanitize=thread)
+    target_link_options(orderbook PRIVATE -fsanitize=thread)
+endif()

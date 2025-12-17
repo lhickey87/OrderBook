@@ -1,55 +1,82 @@
 #include "../include/DataFeed.h"
 
-void DataFeed::start() {
-    ASSERT(Threads::createThread("Data Feed Thread",[this](){run();}) != nullptr, "Unable to start Data Feed Thread");
-}
-
 void DataFeed::flushFinalBuffer(RawBuffer* buffer)
 {
     if (leftoverSize > 0) {
+        //enqueueBuffer(buffer, leftoverSize);
         enqueueBuffer(buffer, leftoverSize);
-        bufferPool_->deallocate(buffer);
     }
     //this will be the terminating condition
-    enqueueBuffer(nullptr, 0);
+    //enqueueBuffer(nullptr, 0);
+    enqueueBuffer(nullptr,0);
+}
+
+void printBuffer(const Byte* buffer, size_t length) {
+    for (size_t i = 0; i < length; ++i) {
+        printf("%02X ", buffer[i]);
+    }
+    printf("\n");
+}
+
+void readThroughData(const Byte* buffer, size_t bytes){
+    size_t remaining = bytes;
+    while (remaining >= 0){
+        auto length = getMsgLength(buffer);
+        printBuffer(buffer,length+HEADER_BYTES);
+        buffer += length+HEADER_BYTES;
+        remaining -= length + HEADER_BYTES;
+    }
 }
 
 void DataFeed::run()
 {
     while (true) {
         RawBuffer* buf = bufferPool_->Allocate();
-        auto bufferData = buf->data();
+        Byte* bufferData = buf->data();
 
-        prependLeftover(bufferData);
-        size_t bytesAvailable = BUFFER_SIZE - leftoverSize;
+        size_t startOffset = 0;
+        if (leftoverSize > 0) {
+            std::memcpy(bufferData, leftover_.data(), leftoverSize);
+            startOffset = leftoverSize;
+        }
 
-        ssize_t bytesRead = ::read(fd_, bufferData+leftoverSize, bytesAvailable);
+        ssize_t bytesRead = ::read(fd_, bufferData+startOffset, BUFFER_SIZE - startOffset);
         if (bytesRead == 0) {
             flushFinalBuffer(buf);
             break;
         }
 
-        size_t totalBytes = leftoverSize + bytesRead;
+        size_t totalBytes = startOffset + static_cast<size_t>(bytesRead);
+
         size_t completeBytes = getBoundary(bufferData, totalBytes);
-        size_t partialBytes  = totalBytes - completeBytes;
+        size_t partialBytes = totalBytes - completeBytes;
 
-        storeLeftover(bufferData + completeBytes, partialBytes);
-        leftoverSize = partialBytes;
+        if (partialBytes > 0) {
+            storeLeftover(bufferData + completeBytes, partialBytes);
+        } else {
+            leftoverSize = 0;
+        }
 
-        enqueueBuffer(buf, completeBytes);
+        if (completeBytes > 0) {
+            enqueueBuffer(buf,completeBytes);
+        }
     }
 }
 
-size_t DataFeed::getBoundary(const Byte* data, int validBytes) noexcept {
-    auto remaining = validBytes;
-    while (remaining > 0) {
-        //2 bytes on end, first two bytes are length header (next length# bytes is the actual message)
-        auto msgLength = getMsgLength(data)+HEADER_BYTES;
+size_t DataFeed::getBoundary(const Byte* data, size_t validBytes) noexcept {
+    size_t remaining = validBytes;
+    uint16_t msgLength;
+    size_t totalLength;
 
-        if (msgLength > remaining) [[unlikely]]
+    while (remaining >= HEADER_BYTES) {
+        msgLength = getMsgLength(data);
+        totalLength = msgLength  + HEADER_BYTES;
+
+        if (totalLength > remaining)
             break;
-        data += msgLength;
-        remaining -= msgLength;
+
+        data += totalLength;
+        remaining -= totalLength;
     }
 
     return validBytes - remaining;   // number of complete bytes

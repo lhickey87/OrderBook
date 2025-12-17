@@ -2,41 +2,29 @@
 #include "../include/DataFeed.h"
 #include <cstdlib>
 
-Logger* logger = nullptr;
-Engine* engine = nullptr;
-DataFeed* dataFeed = nullptr;
-
-//SHOULD  BE CALLED ONCE ENGINE IS DONE AND LOGGER IS FINISHED
-void shutDown(){
-    delete engine;
-    engine = nullptr;
-
-    delete dataFeed;
-    dataFeed = nullptr;
-    //call methods to stop each of these threads
-    delete logger;
-    logger = nullptr;
-
-    exit(EXIT_SUCCESS);
-}
-
+DataFeed* dataFeed;
 
 int main(){
-    //BufferQueue bufferQueue(MAX)
-    LogQueue logQueue(MAX_ORDERS);
-    BufferQueue bufferQueue(MAX_BUFFERS);
+    LFQueue<ReadBuffer> bufferQueue(MAX_BUFFERS);
+    //LogQueue logQueue(MAX_ORDERS);
+    //BufferQueue bufferQueue(MAX_BUFFERS);
     MemoryPool<RawBuffer> bufferPool(1024);
 
-    logger = new Logger(&logQueue);
-    logger->start();
+    const std::string fileName = "Data/APPLE_DATA";
 
-    const std::string fileName = "Data/APPLE_ITCH_DATA";
+    //Logger logger(&logQueue);
+    DataFeed dataFeed(&bufferPool,&bufferQueue, fileName);
+    //DataFeed dataFeed(&bufferPool, &bufferQueue,fileName);
+    //Engine engine(&bufferPool,&logger,&bufferQueue);
+    Engine engine(&bufferPool, &bufferQueue);
 
-    dataFeed = new DataFeed(&bufferPool, &bufferQueue,fileName);
-    dataFeed->start();
+    //logger.start();
+    dataFeed.start();
+    engine.start();
 
-    engine = new Engine(&bufferPool,logger,&bufferQueue);
-    engine->start();
+    dataFeed.join();
+    engine.join();
+    //logger.join();
 
     return EXIT_SUCCESS;
 }
