@@ -10,10 +10,40 @@ add_executable(orderbook
 
 target_link_libraries(orderbook PRIVATE orderbook_lib)
 
+# Library: compile with ASan
 target_compile_options(orderbook_lib PRIVATE
-    -Wall -Wextra -Werror -Wpedantic
+    -O3 -g
+    -fsanitize=address
+    -march=native
+    -fno-omit-frame-pointer
 )
 
+# Executable: compile AND link with ASan
 target_compile_options(orderbook PRIVATE
-    -Wall -Wextra -Werror -Wpedantic
+    -O3 -g
+    -fsanitize=address
+    -march=native
+    -fno-omit-frame-pointer
 )
+
+target_link_options(orderbook PRIVATE
+    -fsanitize=address
+)
+
+#[[
+target_compile_options(orderbook_lib PRIVATE
+    -O2 -g
+    -fno-omit-frame-pointer
+    -march=native
+    -Wall -Wextra -Wpedantic -Werror
+)
+]]
+
+#[[
+target_compile_options(orderbook PRIVATE
+    -O2 -g
+    -fno-omit-frame-pointer
+    -march=native
+    -Wall -Wextra -Wpedantic -Werror
+)
+]]

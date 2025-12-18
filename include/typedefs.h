@@ -18,7 +18,7 @@ using OrderId = std::uint64_t;
 using TickerId = uint16_t;
 
 constexpr size_t BUFFER_SIZE = 1 << 15;
-constexpr size_t MAXLEVELS = 1 << 10;
+constexpr size_t MAXLEVELS = 1 << 12;
 constexpr size_t MAX_ORDERS = 1 << 20;
 constexpr size_t MAX_BUFFERS = 64;
 

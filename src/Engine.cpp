@@ -1,21 +1,17 @@
 #include "../include/Engine.h"
-#include <iostream>
 
 void Engine::run(){
     while (true){
-        while (bufferQueue_->isEmpty()){
-            std::this_thread::yield();
-            continue;
-        }
+        while (bufferQueue_->isEmpty()){ continue; }
+
         const ReadBuffer* bufPtr = bufferQueue_->getReadElement();
 
-        //this will be true once DataFeed has read through entire binary file
-        if (bufPtr->size == 0) [[unlikely]]{ break;}
+        if (!bufPtr) [[unlikely]]{break;}
 
         handleBuffer(bufPtr);
         bufferQueue_->incReadIndex();
     }
-    //logger_->logStop();
+    logger_->logStop();
 }
 
 void Engine::handleBuffer(const ReadBuffer* bufPtr) {
@@ -43,68 +39,72 @@ void Engine::handleMessage(const Byte* message,MessageType type){
     // 1 byte for type, 2 bytes for locate, 2 bytes for tracking num
     switch (type){
         case (MessageType::ADD_ORDER): {
+            // AddOrderMessage::parseMessage(message);
             auto msg = AddOrderMessage::parseMessage(message);
-            msg.print(std::cout);
-            //orderBook_->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_);
+            // msg.print(std::cout);
+            orderBook_->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_);
             //logger_->logOrderAdd(msg.orderId_, msg.orderQuantity_, msg.price_, msg.side_);
             break;
         }
 
         case(MessageType::ADD_ORDER_MPID): {
+            // IdAddOrderMessage::parseMessage(message);
             auto msg = IdAddOrderMessage::parseMessage(message);
-            msg.print(std::cout);
-            //orderBook_->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_, msg.clientId_);
+            // msg.print(std::cout);
+            orderBook_->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_, msg.clientId_);
             //logger_->logOrderAdd(msg.orderId_, msg.orderQuantity_, msg.price_, msg.side_);
             break;
         }
 
         case(MessageType::DELETE_ORDER): {
+            // DeleteMessage::parseMessage(message);
             auto msg = DeleteMessage::parseMessage(message);
-            msg.print(std::cout);
-            //orderBook_->deleteOrder(msg.cancelOrderId);
+            // msg.print(std::cout);
+            orderBook_->deleteOrder(msg.cancelOrderId);
 //            logger_->logOrderDelete(msg.cancelOrderId);
             break;
         }
 
         case(MessageType::EXECUTE_ORDER): {
+            // ExecMessage::parseMessage(message);
             auto msg = ExecMessage::parseMessage(message);
-            msg.print(std::cout);
-            //orderBook_->executeOrder(msg.orderId_,msg.numShares);
+            // msg.print(std::cout);
+            orderBook_->executeOrder(msg.orderId_,msg.numShares);
  //           logger_->logOrderExec(msg.orderId_, msg.numShares);
             break;
         }
 
         case(MessageType::EXECUTE_ORDER_WITH_PRICE): {
+            // ExecPriceMessage::parseMessage(message);
             auto msg = ExecPriceMessage::parseMessage(message);
-            msg.print(std::cout);
-            //orderBook_->executeOrderAtPrice(msg.orderId_,msg.numShares);
+            // msg.print(std::cout);
+            orderBook_->executeOrderAtPrice(msg.orderId_,msg.numShares);
             //logger_->logOrderExec(msg.orderId_, msg.numShares);
             break;
         }
 
         case(MessageType::REDUCE_ORDER): {
+            // ReduceOrderMessage::parseMessage(message);
             auto msg = ReduceOrderMessage::parseMessage(message);
-            msg.print(std::cout);
-            //orderBook_->reduceOrder(msg.orderId_,msg.cancelledShares);
+            // msg.print(std::cout);
+            orderBook_->reduceOrder(msg.orderId_,msg.cancelledShares);
             //logger_->logOrderReduce(msg.orderId_, msg.cancelledShares);
             break;
         }
 
         case(MessageType::REPLACE_ORDER): {
+            // ReplaceMessage::parseMessage(message);
             auto msg = ReplaceMessage::parseMessage(message);
-            msg.print(std::cout);
-            //orderBook_->modifyOrder(msg.oldOrderId, msg.newOrderId,msg.newPrice,msg.numShares);
+            // msg.print(std::cout);
+            orderBook_->modifyOrder(msg.oldOrderId, msg.newOrderId,msg.newPrice,msg.numShares);
             //logger_->logOrderModify(msg.oldOrderId, msg.newOrderId, msg.numShares, msg.newPrice);
             break;
         }
 
-        case(MessageType::BULLSHIT):
-            std::cout << "Non standard message!" << std::endl;
-            break;
-
         case(MessageType::TRADE): {
+            // TradeMessage::parseMessage(message);
             auto msg = TradeMessage::parseMessage(message);
-            msg.print(std::cout);
+            //msg.print(std::cout);
             //logger_->logTrade(msg.sharesMatched, msg.price_);
             break;
         }

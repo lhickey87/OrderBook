@@ -2,7 +2,6 @@
 #include "../include/DataFeed.h"
 #include <cstdlib>
 
-DataFeed* dataFeed;
 
 int main(){
     LFQueue<ReadBuffer> bufferQueue(MAX_BUFFERS);

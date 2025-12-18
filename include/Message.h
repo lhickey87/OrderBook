@@ -12,8 +12,7 @@ enum class MessageType {
     REDUCE_ORDER = 'X',
     DELETE_ORDER = 'D',
     REPLACE_ORDER = 'U',
-    TRADE = 'P',
-    BULLSHIT = 'B'
+    TRADE = 'P'
 };
 
 

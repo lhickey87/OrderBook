@@ -50,19 +50,21 @@ private:
     std::vector<Byte> leftover_; //max Size 40
     MemoryPool<RawBuffer>* bufferPool_;
     BufferQueue* bufferQueue_;
+    size_t total = 0;
     int fd_;
     size_t leftoverSize = 0;
 
     void run();
     void flushFinalBuffer(RawBuffer* buffer);
+
     size_t getBoundary(const Byte* messagebuffer, size_t validBytes) noexcept;
+
     inline void enqueueBuffer(RawBuffer* buffer, size_t size)
     {
         ReadBuffer* slot = bufferQueue_->getWriteElement();
         slot->buffer = buffer;
         slot->size   = size;
         bufferQueue_->incWriteIndex();
-        std::cout << "added to queue" << std::endl;
     }
 
     inline void prependLeftover(Byte* dst) noexcept

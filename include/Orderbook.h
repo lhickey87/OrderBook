@@ -22,12 +22,15 @@ public:
     void reduceOrder(OrderId orderId, Quantity cancelled);
 
     void modifyOrder(OrderId oldOrderId, OrderId newOrderId, Price newPrice, Quantity quantity);
-    //telling compiler not to generate any special member funtionms
    //Orderbook() = delete;
-    Order* getOrder(OrderId orderId) noexcept {return orderMap[orderId];}
+    Order* getOrder(OrderId orderId) noexcept {
+        if (orderMap.find(orderId) == orderMap.end()){ return nullptr;}
+        return orderMap.at(orderId);
+    }
 
-    auto getPriceLevel(Price price) noexcept {
-        return priceLevelsMap[priceToIndex(price)];
+    PriceLevelOrders* getPriceLevel(Price price) noexcept {
+        if (priceLevelsMap.find(price) == priceLevelsMap.end()) {return nullptr;}
+        return priceLevelsMap.at(price);
     }
 
     PriceLevelOrders* getSide(Side side) const {
@@ -57,7 +60,7 @@ private:
 
     void addOrder(Order* order) noexcept {
         //this will be called if our order is only partially filled, or not filled at all
-        const auto levelOrders = priceLevelsMap[order->price_];
+        const auto levelOrders = getPriceLevel(order->price_);
         if (!levelOrders){
             order->nextOrder_ = order->prevOrder_ = order;
             auto newPriceLevel = priceLevelPool.Allocate(order->side_, order->price_, order);
@@ -67,7 +70,6 @@ private:
             while (!priceLevelCompare(order->side_, BestSideLevel->price_, order->price_)){
                 BestSideLevel = BestSideLevel->nextPrice_;
             }
-            //once this is true, we have found the correct side Level now we need to add order to the back
             addOrderToTail(order, BestSideLevel);
         }
     }
@@ -90,12 +92,13 @@ private:
         if (!bestSideLevel) [[unlikely]]{
             bestSideLevel = newLevel;
             newLevel->prevPrice_ = newLevel->nextPrice_ = newLevel;
+            priceLevelsMap[newLevel->price_] = newLevel;
             return;
         }
 
-        auto currentPriceLevel = bestSideLevel;
+        auto& currentPriceLevel = bestSideLevel;
         if (priceLevelCompare(newLevel->side_, currentPriceLevel->price_, newLevel->price_)){
-            insertLevelBefore(bestSideLevel,newLevel);
+            insertLevelBefore(currentPriceLevel,newLevel);
             bestSideLevel = newLevel;
             return;
         }
@@ -105,11 +108,25 @@ private:
             currentPriceLevel = currentPriceLevel->nextPrice_;
         }
 
+        if (currentPriceLevel == bestSideLevel){
+            insertNewTail(bestSideLevel, newLevel);
+            return;
+        }
+
         insertLevelBefore(currentPriceLevel, newLevel);
     }
 
+    void insertNewTail(PriceLevelOrders* bestLevel, PriceLevelOrders* newLevel) noexcept {
+        auto& prev = bestLevel->prevPrice_;
+
+        prev->nextPrice_ = newLevel;
+        newLevel->nextPrice_ = bestLevel;
+        newLevel->prevPrice_ = prev;
+        bestLevel->prevPrice_ = newLevel;
+    }
+
     void insertLevelBefore(PriceLevelOrders* currentLevel, PriceLevelOrders* newLevel) noexcept {
-        auto prev = currentLevel->prevPrice_;
+        auto& prev = currentLevel->prevPrice_;
 
         newLevel->nextPrice_ = currentLevel;
         newLevel->prevPrice_ = prev;
@@ -126,13 +143,13 @@ private:
         }
     }
 
-    size_t priceToIndex(Price price) const {
-        return price % MAXLEVELS;
-    }
-
     void removePriceLevel(Price price, Side side) noexcept {
         auto& bestLevel = (side == Side::BUY) ? bids_ : asks_;
         auto priceLevel = getPriceLevel(price);
+        if (!priceLevel){
+            std::cout << "Price level doesnt exist" << "\n";
+            return;
+        }
 
         priceLevel->nextPrice_->prevPrice_ = priceLevel->prevPrice_;
         priceLevel->prevPrice_->nextPrice_ = priceLevel->nextPrice_;
@@ -142,7 +159,7 @@ private:
         }
 
         priceLevel->nextPrice_ = priceLevel->prevPrice_ = nullptr;
-        priceLevelsMap.at(priceToIndex(priceLevel->price_)) = nullptr;
+        priceLevelsMap.at(priceLevel->price_) = nullptr;
 
         priceLevelPool.deallocate(priceLevel);
     }

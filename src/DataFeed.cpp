@@ -11,23 +11,6 @@ void DataFeed::flushFinalBuffer(RawBuffer* buffer)
     enqueueBuffer(nullptr,0);
 }
 
-void printBuffer(const Byte* buffer, size_t length) {
-    for (size_t i = 0; i < length; ++i) {
-        printf("%02X ", buffer[i]);
-    }
-    printf("\n");
-}
-
-void readThroughData(const Byte* buffer, size_t bytes){
-    size_t remaining = bytes;
-    while (remaining >= 0){
-        auto length = getMsgLength(buffer);
-        printBuffer(buffer,length+HEADER_BYTES);
-        buffer += length+HEADER_BYTES;
-        remaining -= length + HEADER_BYTES;
-    }
-}
-
 void DataFeed::run()
 {
     while (true) {
@@ -41,7 +24,7 @@ void DataFeed::run()
         }
 
         ssize_t bytesRead = ::read(fd_, bufferData+startOffset, BUFFER_SIZE - startOffset);
-        if (bytesRead == 0) {
+        if (bytesRead == 0) [[unlikely]] {
             flushFinalBuffer(buf);
             break;
         }
@@ -49,6 +32,7 @@ void DataFeed::run()
         size_t totalBytes = startOffset + static_cast<size_t>(bytesRead);
 
         size_t completeBytes = getBoundary(bufferData, totalBytes);
+        total += totalBytes;
         size_t partialBytes = totalBytes - completeBytes;
 
         if (partialBytes > 0) {
