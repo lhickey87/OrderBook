@@ -33,9 +33,19 @@ struct ReadBuffer {
 
 using BufferQueue = LFQueue<ReadBuffer>;
 
-inline auto ASSERT(bool cond, const std::string& msg) noexcept {
+inline void logArgs() {std::cerr << std::endl;}
+
+template<typename T, typename... Args>
+inline void logArgs(T&& t, Args&&... args){
+    std::cerr << t;
+    logArgs(std::forward<Args>...);
+}
+
+template<typename... Args>
+inline auto ASSERT(bool cond, const char* msg, Args&&... args) noexcept {
     if (!cond) [[unlikely]]{
-        std::cerr << "ASSERT ERROR:" << msg << std::endl;
+        std::cerr << "ASSERT ERROR:" << msg;
+        logArgs(std::forward<Args>(args)...);
         exit(EXIT_FAILURE);
     }
 }

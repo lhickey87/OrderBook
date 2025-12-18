@@ -24,13 +24,15 @@ public:
     void modifyOrder(OrderId oldOrderId, OrderId newOrderId, Price newPrice, Quantity quantity);
    //Orderbook() = delete;
     Order* getOrder(OrderId orderId) noexcept {
-        if (orderMap.find(orderId) == orderMap.end()){ return nullptr;}
-        return orderMap.at(orderId);
+        auto it = orderMap.find(orderId);
+        if (it == orderMap.end()) [[unlikely]] {return nullptr;}
+        return it->second; // Direct access, no second lookup!
     }
 
     PriceLevelOrders* getPriceLevel(Price price) noexcept {
-        if (priceLevelsMap.find(price) == priceLevelsMap.end()) {return nullptr;}
-        return priceLevelsMap.at(price);
+        auto it = priceLevelsMap.find(price);
+        if (it == priceLevelsMap.end()) {return nullptr;}
+        return it->second;
     }
 
     PriceLevelOrders* getSide(Side side) const {
@@ -65,12 +67,13 @@ private:
             order->nextOrder_ = order->prevOrder_ = order;
             auto newPriceLevel = priceLevelPool.Allocate(order->side_, order->price_, order);
             addPriceLevel(newPriceLevel);
+            newPriceLevel->headOrder = order;
         } else {
-            auto BestSideLevel = (order->side_ == Side::BUY) ? bids_ : asks_;
-            while (!priceLevelCompare(order->side_, BestSideLevel->price_, order->price_)){
-                BestSideLevel = BestSideLevel->nextPrice_;
-            }
-            addOrderToTail(order, BestSideLevel);
+            // auto BestSideLevel = (order->side_ == Side::BUY) ? bids_ : asks_;
+            addOrderToTail(order, levelOrders);
+            // while (!priceLevelCompare(order->side_, BestSideLevel->price_, order->price_)){
+                // BestSideLevel = BestSideLevel->nextPrice_;
+            // }
         }
     }
 
@@ -85,14 +88,12 @@ private:
     }
 
     void addPriceLevel(PriceLevelOrders* newLevel) noexcept {
-        //add to price level Hash map
-        // find the spot where this price level can Rest
         auto& bestSideLevel = (newLevel->side_ == Side::BUY) ? bids_ : asks_;
+        priceLevelsMap[newLevel->price_] = newLevel;
 
         if (!bestSideLevel) [[unlikely]]{
             bestSideLevel = newLevel;
             newLevel->prevPrice_ = newLevel->nextPrice_ = newLevel;
-            priceLevelsMap[newLevel->price_] = newLevel;
             return;
         }
 

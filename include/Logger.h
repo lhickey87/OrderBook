@@ -167,12 +167,12 @@ private:
     void run() noexcept {
         std::vector<char> buffer_;
 
-        buffer_.reserve(4096);
+        buffer_.resize(1<<15);
         while (true){
+            while (queue_->isEmpty()){ continue;}
 
-            auto logElement = queue_->getReadElement();
+            const auto logElement = queue_->getReadElement();
             if (!logElement){
-                std::this_thread::yield();
                 continue;
             }
 
@@ -189,9 +189,9 @@ private:
     void writeAdd(const OrderAddLog& orderAdd, std::vector<char>& buffer) noexcept {
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
                                            "ADD ORDER: orderId: %llu, Quantity: %u, Price: %d \n",
-                                           orderAdd.orderId, orderAdd.quantity, orderAdd.quantity);
+                                           orderAdd.orderId, orderAdd.quantity, orderAdd.price);
 
-        ASSERT(static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer is too small");
+        ASSERT(requiredBytes >= 0 && static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer too small or encoding error");
 
         std::fwrite(buffer.data(),sizeof(Byte), requiredBytes, logFile_);
     }
@@ -201,7 +201,7 @@ private:
                                            "REDUCE ORDER: orderId: %llu, Shares Reduced: %u \n",
                                            orderReduce.orderId, orderReduce.quantity);
 
-        ASSERT(static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer is too small");
+        ASSERT(requiredBytes >= 0 && static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer too small or encoding error");
 
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
@@ -211,7 +211,7 @@ private:
                                            "FILL ORDER: orderId: %llu, Shares Reduced: %u \n",
                                            fillLog.orderId, fillLog.quantity);
 
-        ASSERT(static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer is too small");
+        ASSERT(requiredBytes >= 0 && static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer too small or encoding error");
 
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
@@ -221,7 +221,8 @@ private:
                                            "MODIFY ORDER: Old OrderId: %llu, New OrderId: %llu, New Price: %d, Quantity: %u \n",
                                            modifyLog.oldOrderId, modifyLog.newOrderId, modifyLog.price, modifyLog.quantity);
 
-        ASSERT(static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer is too small");
+
+        ASSERT(requiredBytes >= 0 && static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer too small or encoding error");
 
         std::fwrite(buffer.data(),sizeof(Byte), requiredBytes, logFile_);
     }
@@ -231,7 +232,7 @@ private:
                                            "EXECUTE ORDER: OrderId: %llu, Shares Executed: %u \n",
                                            execLog.orderId, execLog.quantity);
 
-        ASSERT(static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer is too small");
+        ASSERT(requiredBytes >= 0 && static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer too small or encoding error");
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 
@@ -240,7 +241,7 @@ private:
                                            "DELETE ORDER: Deleted Order OrderId: %llu \n",
                                            deleteLog.orderId);
 
-        ASSERT(static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer is too small");
+        ASSERT(requiredBytes >= 0 && static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer too small or encoding error");
 
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
@@ -250,7 +251,7 @@ private:
                                            "TRADE: Quantity: %u, Price: %d \n",
                                            tradeLog.quantity, tradeLog.price);
 
-        ASSERT(static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer is too small");
+        ASSERT(requiredBytes >= 0 && static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer too small or encoding error");
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 

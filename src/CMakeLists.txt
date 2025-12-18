@@ -12,16 +12,14 @@ target_link_libraries(orderbook PRIVATE orderbook_lib)
 
 # Library: compile with ASan
 target_compile_options(orderbook_lib PRIVATE
-    -O3 -g
-    -fsanitize=address
+    -g
     -march=native
     -fno-omit-frame-pointer
 )
 
 # Executable: compile AND link with ASan
 target_compile_options(orderbook PRIVATE
-    -O3 -g
-    -fsanitize=address
+    -g
     -march=native
     -fno-omit-frame-pointer
 )

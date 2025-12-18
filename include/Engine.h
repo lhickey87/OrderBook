@@ -13,8 +13,8 @@ template<typename T> class LFQueue;
 class Engine {
 
 public:
-    explicit Engine(MemoryPool<RawBuffer>* bufferPool, BufferQueue* bufferQueue) :
-        //logger_(logger),
+    explicit Engine(MemoryPool<RawBuffer>* bufferPool, Logger* logger, BufferQueue* bufferQueue) :
+        logger_(logger),
         orderBook_(new Orderbook()),
         bufferPool_(bufferPool),
         bufferQueue_(bufferQueue)
