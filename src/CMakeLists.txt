@@ -29,21 +29,3 @@ target_compile_options(orderbook PRIVATE
 target_link_options(orderbook PRIVATE
     -fsanitize=address
 )
-
-#[[
-target_compile_options(orderbook_lib PRIVATE
-    -O2 -g
-    -fno-omit-frame-pointer
-    -march=native
-    -Wall -Wextra -Wpedantic -Werror
-)
-]]
-
-#[[
-target_compile_options(orderbook PRIVATE
-    -O2 -g
-    -fno-omit-frame-pointer
-    -march=native
-    -Wall -Wextra -Wpedantic -Werror
-)
-]]
