@@ -1,20 +1,23 @@
 #include "../include/Engine.h"
 
 void Engine::run(){
+    Timer t;
+    t.StartTimer();
     while (true){
         while (bufferQueue_->isEmpty()){ continue; }
 
         const ReadBuffer* bufPtr = bufferQueue_->getReadElement();
 
         if (bufPtr->buffer == nullptr) {
-            std::cout << "called to exit" << std::endl;
             break;
         }
 
         handleBuffer(bufPtr);
         bufferQueue_->incReadIndex();
     }
-    std::cout << "broke from engine run, time to join" << std::endl;
+    const auto duration = t.getNanoDuration();
+    const auto seconds = duration/1e9;
+    std::cout << "Engine duration in seconds: " << seconds << std::endl;
     logger_->logStop();
 }
 

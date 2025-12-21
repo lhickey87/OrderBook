@@ -1,7 +1,6 @@
 #include "../include/Engine.h"
 #include "../include/DataFeed.h"
 #include <cstdlib>
-#include <chrono>
 
 
 int main(){
@@ -12,17 +11,17 @@ int main(){
 
     const std::string fileName = "Data/APPLE_DATA";
 
-    // Logger logger(&logQueue);
+    Logger logger(&logQueue);
     DataFeed dataFeed(&bufferPool,&bufferQueue, fileName);
-    // Engine engine(&bufferPool,&logger,&bufferQueue);
+    Engine engine(&bufferPool,&logger,&bufferQueue);
 
     dataFeed.start();
-    // engine.start();
-    // logger.start();
+    engine.start();
+    logger.start();
 
     dataFeed.join();
-    // engine.join();
-    // logger.join();
+    engine.join();
+    logger.join();
 
     return EXIT_SUCCESS;
 }

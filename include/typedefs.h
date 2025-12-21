@@ -1,5 +1,6 @@
 #pragma once
 #include "LFQueue.h"
+#include "../Benchmark/Time.h"
 #include <chrono>
 #include <format>
 #include <iostream>
@@ -30,6 +31,8 @@ struct ReadBuffer {
     RawBuffer* buffer;
     size_t size;
 };
+
+
 
 using BufferQueue = LFQueue<ReadBuffer>;
 
