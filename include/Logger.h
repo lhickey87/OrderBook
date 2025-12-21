@@ -177,6 +177,7 @@ private:
             }
 
             if (logElement->type == LogType::STOP) {
+                formatWrite(logElement,buffer_);
                 queue_->incReadIndex();
                 break;
             }
@@ -184,6 +185,7 @@ private:
             formatWrite(logElement, buffer_);
             queue_->incReadIndex();
         }
+        std::cout << "broke from logger while loop" << std::endl;
     }
 
     void writeAdd(const OrderAddLog& orderAdd, std::vector<char>& buffer) noexcept {

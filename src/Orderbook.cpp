@@ -1,10 +1,9 @@
 #include "../include/Orderbook.h"
 #include <stdexcept>
 
-void Orderbook::add(OrderId orderId, Side side, Price price, Quantity quantity, ClientId client){
+void Orderbook::add(OrderId orderId, Side side, Price price, Quantity quantity){
     //in must allocate an orderFirst
-    Order* newOrder = orderPool.Allocate(orderId,price,quantity,client, side);
-
+    Order* newOrder = orderPool.Allocate(orderId,price,quantity, side);
     orderMap[newOrder->orderId_] = newOrder;
     //logger_->log("{} {}",__FILE__, __LINE__,__FUNCTION__,getCurrentTimeStr());
     addOrder(newOrder);

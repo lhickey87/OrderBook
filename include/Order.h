@@ -6,19 +6,19 @@
 
 struct Order {
     Order() = default;
-    explicit Order(OrderId orderId, Price price, Quantity quantity, ClientId clientId,Side side) noexcept :
+    explicit Order(OrderId orderId, Price price, Quantity quantity, Side side) noexcept :
         orderId_(orderId),
         price_(price),
         quantity_(quantity),
-        clientId_(clientId),
+        // clientId_(clientId),
         side_(side){}
 
-    static constexpr ClientId NO_MPID = -1;
+    // static constexpr ClientId NO_MPID = -1;
 
     OrderId orderId_;
     Price price_;
     Quantity quantity_;
-    ClientId clientId_;
+    // ClientId clientId_;
     Side side_;
     bool isFilled = false;
 

@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <vector>
+#include "typedefs.h"
 
 template<typename T>
 class MemoryPool {
@@ -43,8 +44,15 @@ private:
     };
 
     auto updateNextIndex() noexcept {
+        const auto freeIndex = nextAvailableIndex;
         while (!pool_[nextAvailableIndex].isFreeBlock){
             nextAvailableIndex++;
+            if (nextAvailableIndex == pool_.size()) [[unlikely]]{
+                nextAvailableIndex = 0;
+            }
+            if (freeIndex == nextAvailableIndex) [[unlikely]]{
+                ASSERT(freeIndex != nextAvailableIndex, "Memory pool out of space");
+            }
         }
     }
 

@@ -6,16 +6,16 @@ void Engine::run(){
 
         const ReadBuffer* bufPtr = bufferQueue_->getReadElement();
 
-        if (!bufPtr) {
-            std::cout << "called to exit \n";
+        if (bufPtr->buffer == nullptr) {
+            std::cout << "called to exit" << std::endl;
             break;
         }
 
         handleBuffer(bufPtr);
         bufferQueue_->incReadIndex();
     }
+    std::cout << "broke from engine run, time to join" << std::endl;
     logger_->logStop();
-    std::cout << "logging stop! \n";
 }
 
 void Engine::handleBuffer(const ReadBuffer* bufPtr) {
@@ -56,7 +56,7 @@ void Engine::handleMessage(const Byte* message,MessageType type){
             auto msg = IdAddOrderMessage::parseMessage(message);
             // msg.print(std::cout);
             logger_->logOrderAdd(msg.orderId_, msg.price_, msg.orderQuantity_,msg.side_);
-            orderBook_->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_, msg.clientId_);
+            orderBook_->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_);
             break;
         }
 
@@ -99,10 +99,9 @@ void Engine::handleMessage(const Byte* message,MessageType type){
         case(MessageType::REPLACE_ORDER): {
             // ReplaceMessage::parseMessage(message);
             auto msg = ReplaceMessage::parseMessage(message);
-            std::cout << "Skipping modify with orderId: " << msg.oldOrderId << std::endl;
             // msg.print(std::cout);
-            // logger_->logOrderModify(msg.oldOrderId, msg.newOrderId, msg.numShares, msg.newPrice);
-            // orderBook_->modifyOrder(msg.oldOrderId, msg.newOrderId,msg.newPrice,msg.numShares);
+            logger_->logOrderModify(msg.oldOrderId, msg.newOrderId, msg.numShares, msg.newPrice);
+            orderBook_->modifyOrder(msg.oldOrderId, msg.newOrderId,msg.newPrice,msg.numShares);
             break;
         }
 

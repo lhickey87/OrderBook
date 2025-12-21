@@ -1,4 +1,5 @@
 #include "../include/DataFeed.h"
+#include <chrono>
 
 void DataFeed::flushFinalBuffer(RawBuffer* buffer)
 {
@@ -7,12 +8,13 @@ void DataFeed::flushFinalBuffer(RawBuffer* buffer)
         enqueueBuffer(buffer, leftoverSize);
     }
     //this will be the terminating condition
-    //enqueueBuffer(nullptr, 0);
+    std::cout << "Final buff flushed" << std::endl;
     enqueueBuffer(nullptr,0);
 }
 
 void DataFeed::run()
 {
+    const auto start = std::chrono::high_resolution_clock::now();
     while (true) {
         RawBuffer* buf = bufferPool_->Allocate();
         Byte* bufferData = buf->data();
@@ -45,6 +47,9 @@ void DataFeed::run()
             enqueueBuffer(buf,completeBytes);
         }
     }
+    const auto end = std::chrono::high_resolution_clock::now();
+    const auto duration = std::chrono::duration<double>(end-start);
+    std::cout << "Total time for datafeed thread: " << static_cast<double>(duration) << std::endl;
 }
 
 size_t DataFeed::getBoundary(const Byte* data, size_t validBytes) noexcept {

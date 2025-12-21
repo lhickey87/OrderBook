@@ -11,7 +11,7 @@ class Orderbook {
 public:
     Orderbook(): orderPool(MAX_ORDERS),priceLevelPool(MAXLEVELS), orderMap(MAX_ORDERS), priceLevelsMap(MAXLEVELS){}
 
-    void add(OrderId orderId, Side side, Price price, Quantity quantity, ClientId mpid = Order::NO_MPID);
+    void add(OrderId orderId, Side side, Price price, Quantity quantity);
 
     void deleteOrder(OrderId orderId); //cancel from order's hashmap by setting to nullptr
 
@@ -88,7 +88,7 @@ private:
     }
 
     void addPriceLevel(PriceLevelOrders* newLevel) noexcept {
-        auto& bestSideLevel = (newLevel->side_ == Side::BUY) ? bids_ : asks_;
+        auto bestSideLevel = (newLevel->side_ == Side::BUY) ? bids_ : asks_;
         priceLevelsMap[newLevel->price_] = newLevel;
 
         if (!bestSideLevel) [[unlikely]]{
@@ -97,7 +97,7 @@ private:
             return;
         }
 
-        auto& currentPriceLevel = bestSideLevel;
+        auto currentPriceLevel = bestSideLevel;
         if (priceLevelCompare(newLevel->side_, currentPriceLevel->price_, newLevel->price_)){
             insertLevelBefore(currentPriceLevel,newLevel);
             bestSideLevel = newLevel;
@@ -118,7 +118,7 @@ private:
     }
 
     void insertNewTail(PriceLevelOrders* bestLevel, PriceLevelOrders* newLevel) noexcept {
-        auto& prev = bestLevel->prevPrice_;
+        auto prev = bestLevel->prevPrice_;
 
         prev->nextPrice_ = newLevel;
         newLevel->nextPrice_ = bestLevel;
@@ -127,7 +127,7 @@ private:
     }
 
     void insertLevelBefore(PriceLevelOrders* currentLevel, PriceLevelOrders* newLevel) noexcept {
-        auto& prev = currentLevel->prevPrice_;
+        auto prev = currentLevel->prevPrice_;
 
         newLevel->nextPrice_ = currentLevel;
         newLevel->prevPrice_ = prev;
@@ -145,22 +145,21 @@ private:
     }
 
     void removePriceLevel(Price price, Side side) noexcept {
-        auto& bestLevel = (side == Side::BUY) ? bids_ : asks_;
+        auto bestLevel = (side == Side::BUY ? bids_ : asks_);
         auto priceLevel = getPriceLevel(price);
-        if (!priceLevel){
-            std::cout << "Price level doesnt exist" << "\n";
-            return;
+        if (priceLevel->nextPrice_ == priceLevel) [[unlikely]]{
+            bestLevel = nullptr;
+        } else {
+            priceLevel->nextPrice_->prevPrice_ = priceLevel->prevPrice_;
+            priceLevel->prevPrice_->nextPrice_ = priceLevel->nextPrice_;
+
+            if (priceLevel == bestLevel){
+                bestLevel = priceLevel->nextPrice_;
+            }
+
+            priceLevel->nextPrice_ = priceLevel->prevPrice_ = nullptr;
         }
-
-        priceLevel->nextPrice_->prevPrice_ = priceLevel->prevPrice_;
-        priceLevel->prevPrice_->nextPrice_ = priceLevel->nextPrice_;
-
-        if (priceLevel == bestLevel){
-            bestLevel = priceLevel->nextPrice_;
-        }
-
-        priceLevel->nextPrice_ = priceLevel->prevPrice_ = nullptr;
-        priceLevelsMap.at(priceLevel->price_) = nullptr;
+        priceLevelsMap.erase(priceLevel->price_);
 
         priceLevelPool.deallocate(priceLevel);
     }
