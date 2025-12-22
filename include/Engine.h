@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <unordered_map>
 
-
 struct ReadBuffer;
 template<typename T> class LFQueue;
 

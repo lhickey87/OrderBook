@@ -31,7 +31,7 @@ public:
 
     PriceLevelOrders* getPriceLevel(Price price) noexcept {
         auto it = priceLevelsMap.find(price);
-        if (it == priceLevelsMap.end()) {return nullptr;}
+        if (it == priceLevelsMap.end()) [[unlikely]]{return nullptr;}
         return it->second;
     }
 

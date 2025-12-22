@@ -19,9 +19,6 @@ public:
         bufferQueue_(buffer)
         {
             fd_ = ::open(fileName.c_str(),O_RDONLY);
-            if (fd_ != 1){
-                std::cout << "file opened \n";
-            }
         }
 
     ~DataFeed(){

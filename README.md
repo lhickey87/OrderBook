@@ -1,8 +1,20 @@
-
-
 ## Description
 This project aims to have achieved extremely high-performance ITCH orderbook, able to dissemenate 9.6 Million Nasdaq messages/second. Much of this project was inspired by David gross talks on low-latency applications which I have listed below. 
 
+#### O(log n) Orderbook Operations: 
+- Delete Order
+- Execute Order
+- Reduce Order
+- Modify Order
+
+#### O(n) Orderbook Operations
+- Add Order (Average) 
+
+### Features ensuring High-Performance
+- Implementation of Memory Pool, avoiding the performance overhead that comes with dynamic heap allocation. All Memory is requested at start of program.
+- Implementation of Single-Consumer, Single Producer Lock-Free Queue
+- Buffered I/O, avoiding constant read and write syscalls, significantly improving DataFeed performance
+- Use of contiguous Data Structures instead of node containers (using std::vector instead of std::map)
 
 
 ## Building and Running the program
@@ -21,7 +33,6 @@ cd OrderBook
 ```bash
 ./build/src/orderbook 
 ```
-
 
 ## Discussion
 I have linked two David Gross talks below which were significant inspirations when designing my low-latency orderbook. In these talks he shows that whilst Node containers like std::map can have more desirable worst-case time complexities, when building a low-latency

@@ -38,6 +38,7 @@ public:
     MemoryPool(const MemoryPool&) = delete;
     MemoryPool(MemoryPool&&) = delete;
 private:
+
     struct Block {
         T data_;
         bool isFreeBlock = true;
@@ -49,9 +50,6 @@ private:
             nextAvailableIndex++;
             if (nextAvailableIndex == pool_.size()) [[unlikely]]{
                 nextAvailableIndex = 0;
-            }
-            if (freeIndex == nextAvailableIndex) [[unlikely]]{
-                ASSERT(freeIndex != nextAvailableIndex, "Memory pool out of space");
             }
         }
     }
