@@ -52,13 +52,6 @@ private:
 
     std::unordered_map<OrderId, Order*> orderMap;
     std::unordered_map<Price, PriceLevelOrders*> priceLevelsMap;
-    size_t nextOrderId = 1;
-
-    //void logEvent() noexcept {}
-    //if using particular exchange we may have to implement exchanged specific logic
-    auto getNextOrderId() noexcept {
-        return nextOrderId++;
-    }
 
     void addOrder(Order* order) noexcept {
         //this will be called if our order is only partially filled, or not filled at all
@@ -69,11 +62,7 @@ private:
             addPriceLevel(newPriceLevel);
             newPriceLevel->headOrder = order;
         } else {
-            // auto BestSideLevel = (order->side_ == Side::BUY) ? bids_ : asks_;
             addOrderToTail(order, levelOrders);
-            // while (!priceLevelCompare(order->side_, BestSideLevel->price_, order->price_)){
-                // BestSideLevel = BestSideLevel->nextPrice_;
-            // }
         }
     }
 

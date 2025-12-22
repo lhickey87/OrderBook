@@ -47,7 +47,6 @@ private:
     //we will need some sort of queue
     std::thread engineThread;
     Logger* logger_;
-    std::vector<Byte> splicedMessage{};
     Orderbook* orderBook_;
     MemoryPool<RawBuffer>* bufferPool_;
     BufferQueue* bufferQueue_;

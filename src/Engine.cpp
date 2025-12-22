@@ -49,7 +49,7 @@ void Engine::handleMessage(const Byte* message,MessageType type){
             // AddOrderMessage::parseMessage(message);
             auto msg = AddOrderMessage::parseMessage(message);
             // msg.print(std::cout);
-            logger_->logOrderAdd(msg.orderId_, msg.price_, msg.orderQuantity_, msg.side_);
+            // logger_->logOrderAdd(msg.orderId_, msg.price_, msg.orderQuantity_, msg.side_);
             orderBook_->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_);
             break;
         }
@@ -58,7 +58,7 @@ void Engine::handleMessage(const Byte* message,MessageType type){
             // IdAddOrderMessage::parseMessage(message);
             auto msg = IdAddOrderMessage::parseMessage(message);
             // msg.print(std::cout);
-            logger_->logOrderAdd(msg.orderId_, msg.price_, msg.orderQuantity_,msg.side_);
+            // logger_->logOrderAdd(msg.orderId_, msg.price_, msg.orderQuantity_,msg.side_);
             orderBook_->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_);
             break;
         }
@@ -67,7 +67,7 @@ void Engine::handleMessage(const Byte* message,MessageType type){
             // DeleteMessage::parseMessage(message);
             auto msg = DeleteMessage::parseMessage(message);
             // msg.print(std::cout);
-            logger_->logOrderDelete(msg.cancelOrderId);
+            // logger_->logOrderDelete(msg.cancelOrderId);
             orderBook_->deleteOrder(msg.cancelOrderId);
             break;
         }
@@ -76,7 +76,7 @@ void Engine::handleMessage(const Byte* message,MessageType type){
             // ExecMessage::parseMessage(message);
             auto msg = ExecMessage::parseMessage(message);
             // msg.print(std::cout);
-            logger_->logOrderExec(msg.orderId_, msg.numShares);
+            // logger_->logOrderExec(msg.orderId_, msg.numShares);
             orderBook_->executeOrder(msg.orderId_,msg.numShares);
             break;
         }
@@ -85,7 +85,7 @@ void Engine::handleMessage(const Byte* message,MessageType type){
             // ExecPriceMessage::parseMessage(message);
             auto msg = ExecPriceMessage::parseMessage(message);
             // msg.print(std::cout);
-            logger_->logOrderExec(msg.orderId_, msg.numShares);
+            // logger_->logOrderExec(msg.orderId_, msg.numShares);
             orderBook_->executeOrderAtPrice(msg.orderId_,msg.numShares);
             break;
         }
@@ -94,7 +94,7 @@ void Engine::handleMessage(const Byte* message,MessageType type){
             // ReduceOrderMessage::parseMessage(message);
             auto msg = ReduceOrderMessage::parseMessage(message);
             // msg.print(std::cout);
-            logger_->logOrderReduce(msg.orderId_, msg.cancelledShares);
+            // logger_->logOrderReduce(msg.orderId_, msg.cancelledShares);
             orderBook_->reduceOrder(msg.orderId_,msg.cancelledShares);
             break;
         }
@@ -103,7 +103,7 @@ void Engine::handleMessage(const Byte* message,MessageType type){
             // ReplaceMessage::parseMessage(message);
             auto msg = ReplaceMessage::parseMessage(message);
             // msg.print(std::cout);
-            logger_->logOrderModify(msg.oldOrderId, msg.newOrderId, msg.numShares, msg.newPrice);
+            // logger_->logOrderModify(msg.oldOrderId, msg.newOrderId, msg.numShares, msg.newPrice);
             orderBook_->modifyOrder(msg.oldOrderId, msg.newOrderId,msg.newPrice,msg.numShares);
             break;
         }
@@ -112,7 +112,7 @@ void Engine::handleMessage(const Byte* message,MessageType type){
             // TradeMessage::parseMessage(message);
             auto msg = TradeMessage::parseMessage(message);
             // msg.print(std::cout);
-            logger_->logTrade(msg.sharesMatched, msg.price_);
+            // logger_->logTrade(msg.sharesMatched, msg.price_);
             break;
         }
     }
