@@ -20,7 +20,7 @@ using TickerId = uint16_t;
 
 constexpr size_t BUFFER_SIZE = 1 << 15;
 constexpr size_t MAXLEVELS = 1 << 14;
-constexpr size_t MAX_ORDERS = 1 << 20;
+constexpr size_t MAX_ORDERS = 1 << 18;
 constexpr size_t MAX_BUFFERS = 1024;
 
 static constexpr auto HEADER_BYTES = 2;
@@ -31,8 +31,6 @@ struct ReadBuffer {
     RawBuffer* buffer;
     size_t size;
 };
-
-
 
 using BufferQueue = LFQueue<ReadBuffer>;
 

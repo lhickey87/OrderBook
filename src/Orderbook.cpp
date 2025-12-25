@@ -1,15 +1,14 @@
 #include "../include/Orderbook.h"
-#include <stdexcept>
 
-void Orderbook::add(OrderId orderId, Side side, Price price, Quantity quantity){
+void Orderbook::add(OrderId orderId, Side side, Price price, Quantity quantity) noexcept {
     Order* newOrder = orderPool.Allocate(orderId,price,quantity, side);
     orderMap[newOrder->orderId_] = newOrder;
     addOrder(newOrder);
 }
 
-void Orderbook::deleteOrder(OrderId orderId){
+void Orderbook::deleteOrder(OrderId orderId) noexcept {
     auto order = getOrder(orderId);
-    if (!order){ throw std::out_of_range("Order not in map");}
+    if (!order)[[unlikely]]{ std::cout << "returning" << std::endl; return;}
 
     if (order->prevOrder_ == order){
         removePriceLevel(order->price_, order->side_);
@@ -24,33 +23,34 @@ void Orderbook::deleteOrder(OrderId orderId){
     orderPool.deallocate(order);
 }
 
-void Orderbook::executeOrderAtPrice(OrderId orderId, Quantity quantity){
+void Orderbook::executeOrderAtPrice(OrderId orderId, Quantity quantity) noexcept {
     auto order = getOrder(orderId);
 
-    if (!order){ throw std::out_of_range("Not in map");}
+    if (!order)[[unlikely]]{ std::cout << "returning" << std::endl; return;}
     order->Fill(quantity);
 }
 
-void Orderbook::executeOrder(OrderId orderId, Quantity quantity){
+void Orderbook::executeOrder(OrderId orderId, Quantity quantity) noexcept {
     auto order = getOrder(orderId);
 
-    if (!order){ throw std::out_of_range("Not in map.");}
+    if (!order)[[unlikely]]{ std::cout << "returning" << std::endl; return;}
 
     order->Fill(quantity);
 }
 
-void Orderbook::reduceOrder(OrderId orderId, Quantity cancelled){
+void Orderbook::reduceOrder(OrderId orderId, Quantity cancelled) noexcept{
     auto order = getOrder(orderId);
 
-    if (!order){ throw std::out_of_range("not in map");}
+    if (!order)[[unlikely]]{ std::cout << "returning" << std::endl; return;}
+
 
     order->Fill(cancelled);
 }
 
-void Orderbook::modifyOrder(OrderId oldOrderId, OrderId newOrderId, Price newPrice, Quantity quantity){
+void Orderbook::modifyOrder(OrderId oldOrderId, OrderId newOrderId, Price newPrice, Quantity quantity) noexcept {
     auto oldOrder = getOrder(oldOrderId);
 
-    if (!oldOrder){ throw std::out_of_range("not in map");}
+    if (!oldOrder)[[unlikely]]{ std::cout << "returning" << std::endl; return;}
 
     Side side = oldOrder->side_;
     deleteOrder(oldOrderId);

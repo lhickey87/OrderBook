@@ -11,17 +11,17 @@ class Orderbook {
 public:
     Orderbook(): orderPool(MAX_ORDERS),priceLevelPool(MAXLEVELS), orderMap(MAX_ORDERS), priceLevelsMap(MAXLEVELS){}
 
-    void add(OrderId orderId, Side side, Price price, Quantity quantity);
+    void add(OrderId orderId, Side side, Price price, Quantity quantity) noexcept;
 
-    void deleteOrder(OrderId orderId); //cancel from order's hashmap by setting to nullptr
+    void deleteOrder(OrderId orderId) noexcept; //cancel from order's hashmap by setting to nullptr
 
-    void executeOrderAtPrice(OrderId orderId, Quantity quantity);
+    void executeOrderAtPrice(OrderId orderId, Quantity quantity) noexcept;
 
-    void executeOrder(OrderId orderId, Quantity quantity);
+    void executeOrder(OrderId orderId, Quantity quantity) noexcept;
 
-    void reduceOrder(OrderId orderId, Quantity cancelled);
+    void reduceOrder(OrderId orderId, Quantity cancelled) noexcept;
 
-    void modifyOrder(OrderId oldOrderId, OrderId newOrderId, Price newPrice, Quantity quantity);
+    void modifyOrder(OrderId oldOrderId, OrderId newOrderId, Price newPrice, Quantity quantity) noexcept;
    //Orderbook() = delete;
     Order* getOrder(OrderId orderId) noexcept {
         auto it = orderMap.find(orderId);
@@ -35,7 +35,7 @@ public:
         return it->second;
     }
 
-    PriceLevelOrders* getSide(Side side) const {
+    inline PriceLevelOrders* getSide(Side side) const {
         return (side == Side::BUY) ? bids_ : asks_;
     }
 
@@ -106,7 +106,7 @@ private:
         insertLevelBefore(currentPriceLevel, newLevel);
     }
 
-    void insertNewTail(PriceLevelOrders* bestLevel, PriceLevelOrders* newLevel) noexcept {
+    inline void insertNewTail(PriceLevelOrders* bestLevel, PriceLevelOrders* newLevel) noexcept {
         auto prev = bestLevel->prevPrice_;
 
         prev->nextPrice_ = newLevel;
@@ -125,7 +125,7 @@ private:
         prev->nextPrice_ = newLevel;
     }
 
-    bool priceLevelCompare(Side side, Price currentPrice, Price newLevelPrice) noexcept {
+    inline bool priceLevelCompare(Side side, Price currentPrice, Price newLevelPrice) noexcept {
         if (side == Side::BUY){
             return currentPrice < newLevelPrice;
         } else {

@@ -97,7 +97,7 @@ public:
 
     void logOrderAdd(OrderId oid, Price price, Quantity quantity, Side side) noexcept {
         auto logElement = queue_->getWriteElement();
-        logElement->timestamp = Timer::GetTimeNanos(); // Use your fast timer
+        // logElement->timestamp = Timer::GetTimeNanos(); // Use your fast timer
         logElement->type = LogType::ORDER_ADD;
         logElement->u.orderAdd = {oid,price,quantity,side};
         queue_->incWriteIndex();
@@ -105,7 +105,7 @@ public:
 
     void logOrderFill(OrderId orderId, Quantity quantity) noexcept {
         LogElement* logElement = queue_->getWriteElement();
-        logElement->timestamp = Timer::GetTimeNanos();
+        // logElement->timestamp = Timer::GetTimeNanos();
         logElement->type = LogType::ORDER_FILL;
         logElement->u.orderReduce = {orderId, quantity};
         queue_->incWriteIndex();
@@ -113,7 +113,7 @@ public:
 
     void logOrderReduce(OrderId orderId, Quantity quantity) noexcept {
         LogElement* logElement = queue_->getWriteElement();
-        logElement->timestamp = Timer::GetTimeNanos();
+        // logElement->timestamp = Timer::GetTimeNanos();
         logElement->type = LogType::ORDER_REDUCE;
         logElement->u.orderReduce = {orderId, quantity};
         queue_->incWriteIndex();
@@ -121,7 +121,7 @@ public:
 
     void logOrderExec(OrderId orderId, Quantity quantity) noexcept {
         LogElement* logElement = queue_->getWriteElement();
-        logElement->timestamp = Timer::GetTimeNanos();
+        // logElement->timestamp = Timer::GetTimeNanos();
         logElement->type = LogType::ORDER_EXEC;
         logElement->u.orderExec = {orderId, quantity};
         queue_->incWriteIndex();
@@ -129,7 +129,7 @@ public:
 
     void logOrderDelete(OrderId orderId) noexcept {
         LogElement* logElement = queue_->getWriteElement();
-        logElement->timestamp = Timer::GetTimeNanos();
+        // logElement->timestamp = Timer::GetTimeNanos();
         logElement->type = LogType::ORDER_DELETE;
         logElement->u.orderDelete = {orderId};
         queue_->incWriteIndex();
@@ -137,7 +137,7 @@ public:
 
     void logOrderModify(OrderId oldOrderId, OrderId newOrderId, Quantity quantity, Price price) noexcept {
         LogElement* logElement = queue_->getWriteElement();
-        logElement->timestamp = Timer::GetTimeNanos();
+        // logElement->timestamp = Timer::GetTimeNanos();
         logElement->type = LogType::ORDER_MODIFY;
         logElement->u.orderModify = {oldOrderId, newOrderId, quantity, price};
         queue_->incWriteIndex();
@@ -145,7 +145,7 @@ public:
 
     void logTrade(Quantity quantity, Price price) noexcept {
         LogElement* logElement = queue_->getWriteElement();
-        logElement->timestamp = Timer::GetTimeNanos();
+        // logElement->timestamp = Timer::GetTimeNanos();
         logElement->type = LogType::TRADE;
         logElement->u.trade = {quantity,price};
         queue_->incWriteIndex();
@@ -153,7 +153,7 @@ public:
 
     void logStop() noexcept {
         LogElement* logElement = queue_->getWriteElement();
-        logElement->timestamp = Timer::GetTimeNanos();
+        // logElement->timestamp = Timer::GetTimeNanos();
         logElement->type = LogType::STOP;
         logElement->u.stop = {"Finished"};
         queue_->incWriteIndex();
@@ -189,8 +189,6 @@ private:
                                            "ADD ORDER: orderId: %llu, Quantity: %u, Price: %d \n",
                                            orderAdd.orderId, orderAdd.quantity, orderAdd.price);
 
-        // ASSERT(requiredBytes >= 0 && static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer too small or encoding error");
-
         std::fwrite(buffer.data(),sizeof(Byte), requiredBytes, logFile_);
     }
 
@@ -198,8 +196,6 @@ private:
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
                                            "REDUCE ORDER: orderId: %llu, Shares Reduced: %u \n",
                                            orderReduce.orderId, orderReduce.quantity);
-
-        // ASSERT(requiredBytes >= 0 && static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer too small or encoding error");
 
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
@@ -209,8 +205,6 @@ private:
                                            "FILL ORDER: orderId: %llu, Shares Reduced: %u \n",
                                            fillLog.orderId, fillLog.quantity);
 
-        // ASSERT(requiredBytes >= 0 && static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer too small or encoding error");
-
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 
@@ -218,8 +212,6 @@ private:
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
                                            "MODIFY ORDER: Old OrderId: %llu, New OrderId: %llu, New Price: %d, Quantity: %u \n",
                                            modifyLog.oldOrderId, modifyLog.newOrderId, modifyLog.price, modifyLog.quantity);
-
-        // ASSERT(requiredBytes >= 0 && static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer too small or encoding error");
 
         std::fwrite(buffer.data(),sizeof(Byte), requiredBytes, logFile_);
     }
@@ -229,7 +221,6 @@ private:
                                            "EXECUTE ORDER: OrderId: %llu, Shares Executed: %u \n",
                                            execLog.orderId, execLog.quantity);
 
-        // ASSERT(requiredBytes >= 0 && static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer too small or encoding error");
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 
@@ -237,8 +228,6 @@ private:
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
                                            "DELETE ORDER: Deleted Order OrderId: %llu \n",
                                            deleteLog.orderId);
-
-        // ASSERT(requiredBytes >= 0 && static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer too small or encoding error");
 
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
@@ -248,7 +237,6 @@ private:
                                            "TRADE: Quantity: %u, Price: %d \n",
                                            tradeLog.quantity, tradeLog.price);
 
-        // ASSERT(requiredBytes >= 0 && static_cast<size_t>(requiredBytes) < buffer.size(), "Buffer too small or encoding error");
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 

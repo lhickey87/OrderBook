@@ -14,9 +14,8 @@ void Engine::run(){
         bufferQueue_->incReadIndex();
     }
     const auto duration = t.getNanoDuration();
-    const auto seconds = duration/1e9;
-    std::cout << "Engine duration in seconds: " << seconds << std::endl;
-    // logger_->logStop();
+    std::cout << "Engine duration(s) : " << duration << std::endl;
+    logger_->logStop();
 }
 
 void Engine::handleBuffer(const ReadBuffer* bufPtr) {
@@ -39,62 +38,63 @@ void Engine::handleBuffer(const ReadBuffer* bufPtr) {
     }
 }
 
+//if we wanted to turn this into compile time?
 void Engine::handleMessage(const Byte* message,MessageType type){
     //need to handle the messageHeader which would be total of 5 bytes
     // 1 byte for type, 2 bytes for locate, 2 bytes for tracking num
     switch (type){
         case (MessageType::ADD_ORDER): {
             auto msg = AddOrderMessage::parseMessage(message);
-            // logger_->logOrderAdd(msg.orderId_, msg.price_, msg.orderQuantity_, msg.side_);
+            logger_->logOrderAdd(msg.orderId_, msg.price_, msg.orderQuantity_, msg.side_);
             orderBook_->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_);
             break;
         }
 
         case(MessageType::ADD_ORDER_MPID): {
             auto msg = IdAddOrderMessage::parseMessage(message);
-            // logger_->logOrderAdd(msg.orderId_, msg.price_, msg.orderQuantity_,msg.side_);
+            logger_->logOrderAdd(msg.orderId_, msg.price_, msg.orderQuantity_,msg.side_);
             orderBook_->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_);
             break;
         }
 
         case(MessageType::DELETE_ORDER): {
             auto msg = DeleteMessage::parseMessage(message);
-            // logger_->logOrderDelete(msg.cancelOrderId);
+            logger_->logOrderDelete(msg.cancelOrderId);
             orderBook_->deleteOrder(msg.cancelOrderId);
             break;
         }
 
         case(MessageType::EXECUTE_ORDER): {
             auto msg = ExecMessage::parseMessage(message);
-            // logger_->logOrderExec(msg.orderId_, msg.numShares);
+            logger_->logOrderExec(msg.orderId_, msg.numShares);
             orderBook_->executeOrder(msg.orderId_,msg.numShares);
             break;
         }
 
         case(MessageType::EXECUTE_ORDER_WITH_PRICE): {
             auto msg = ExecPriceMessage::parseMessage(message);
-            // logger_->logOrderExec(msg.orderId_, msg.numShares);
+            logger_->logOrderExec(msg.orderId_, msg.numShares);
             orderBook_->executeOrderAtPrice(msg.orderId_,msg.numShares);
             break;
         }
 
         case(MessageType::REDUCE_ORDER): {
             auto msg = ReduceOrderMessage::parseMessage(message);
-            // logger_->logOrderReduce(msg.orderId_, msg.cancelledShares);
+            logger_->logOrderReduce(msg.orderId_, msg.cancelledShares);
             orderBook_->reduceOrder(msg.orderId_,msg.cancelledShares);
             break;
         }
 
         case(MessageType::REPLACE_ORDER): {
             auto msg = ReplaceMessage::parseMessage(message);
-            // logger_->logOrderModify(msg.oldOrderId, msg.newOrderId, msg.numShares, msg.newPrice);
+            logger_->logOrderModify(msg.oldOrderId, msg.newOrderId, msg.numShares, msg.newPrice);
             orderBook_->modifyOrder(msg.oldOrderId, msg.newOrderId,msg.newPrice,msg.numShares);
             break;
         }
 
         case(MessageType::TRADE): {
             auto msg = TradeMessage::parseMessage(message);
-            // logger_->logTrade(msg.sharesMatched, msg.price_);
+            logger_->logTrade(msg.sharesMatched, msg.price_);
             break;
         }
     }

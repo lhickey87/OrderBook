@@ -12,8 +12,6 @@ void DataFeed::flushFinalBuffer(RawBuffer* buffer)
 
 void DataFeed::run()
 {
-    Timer t;
-    t.StartTimer();
     while (true) {
         RawBuffer* buf = bufferPool_->Allocate();
         Byte* bufferData = buf->data();
@@ -46,10 +44,6 @@ void DataFeed::run()
             enqueueBuffer(buf,completeBytes);
         }
     }
-    const auto duration = t.getNanoDuration();
-    const auto seconds = duration / 1e6;
-
-    // std::cout << "Datafeed Duration " << seconds << std::endl;
 }
 
 size_t DataFeed::getBoundary(const Byte* data, size_t validBytes) noexcept {

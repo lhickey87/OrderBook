@@ -8,7 +8,7 @@ This project aims to have achieved extremely high-performance ITCH orderbook, ab
 - Modify Order
 
 #### O(n) Orderbook Operations
-- Add Order (Average) 
+- Add Order 
 
 ### Features ensuring High-Performance
 - Implementation of Memory Pool, avoiding the performance overhead that comes with dynamic heap allocation. All Memory is requested at start of program.

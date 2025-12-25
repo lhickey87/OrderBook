@@ -4,7 +4,10 @@
 #include "Message.h"
 #include <atomic>
 #include <cstdint>
+#include <memory>
 #include <unordered_map>
+#include <utility>
+
 
 struct ReadBuffer;
 template<typename T> class LFQueue;
@@ -14,7 +17,7 @@ class Engine {
 public:
     explicit Engine(MemoryPool<RawBuffer>* bufferPool, Logger* logger, BufferQueue* bufferQueue) :
         logger_(logger),
-        orderBook_(new Orderbook()),
+        orderBook_(std::make_unique<Orderbook>()),
         bufferPool_(bufferPool),
         bufferQueue_(bufferQueue)
         {}
@@ -46,7 +49,7 @@ private:
     //we will need some sort of queue
     std::thread engineThread;
     Logger* logger_;
-    Orderbook* orderBook_;
+    std::unique_ptr<Orderbook> orderBook_;
     MemoryPool<RawBuffer>* bufferPool_;
     BufferQueue* bufferQueue_;
 };

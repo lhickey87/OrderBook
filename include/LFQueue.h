@@ -6,8 +6,8 @@ template<typename T>
 class LFQueue {
 public:
 
-    explicit LFQueue(size_t size) :
-        buffer_(size, T()) {}
+    explicit LFQueue(size_t capacity) :
+        capacity_(capacity), buffer_(capacity, T()) {}
 
     auto getWriteElement() noexcept {
         return &buffer_[writeIndex_];
@@ -15,7 +15,6 @@ public:
 
     auto incWriteIndex() noexcept {
         writeIndex_ = (writeIndex_+1) & (buffer_.size()-1);
-        numElements_++;
     }
 
     auto getReadElement() const {
@@ -25,12 +24,17 @@ public:
     auto incReadIndex() noexcept {
         if (Size() != 0) [[likely]] {
             readIndex_ = (readIndex_+1) & (buffer_.size()-1);
-            numElements_--;
         }
     }
 
     size_t Size() const {
-        return numElements_.load();
+        const auto write = writeIndex_.load(std::memory_order_relaxed);
+        const auto read = readIndex_.load(std::memory_order_relaxed);
+        if (write > read){
+            return write-read;
+        } else {
+            return capacity_ - (read-write);
+        }
     }
 
     bool isEmpty() noexcept {
@@ -38,7 +42,7 @@ public:
     }
 
     bool isFull() noexcept {
-        return Size() - 1== buffer_.size();
+        return Size() - 1 == capacity_;
     }
 
     LFQueue() = delete;
@@ -48,8 +52,8 @@ public:
     LFQueue& operator=(LFQueue&&) = delete;
 
 private:
+    size_t capacity_;
     std::vector<T> buffer_;
     alignas(64) std::atomic<size_t> writeIndex_{0};
     alignas(64) std::atomic<size_t> readIndex_{0};
-    alignas(64) std::atomic<size_t> numElements_{0};
 };

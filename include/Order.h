@@ -22,11 +22,12 @@ struct Order {
     Side side_;
     bool isFilled = false;
 
+    //Best not to use unique pointer, otherwise we might have to use move semantics which is sure to provide overhead
     Order* nextOrder_ = nullptr;
     Order* prevOrder_ = nullptr;
 
 
-    void Fill(Quantity quantity){
+    inline void Fill(Quantity quantity){
         quantity_ -= quantity;
         if (quantity_ < 0){
             quantity_ = 0;
