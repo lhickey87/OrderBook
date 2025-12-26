@@ -1,8 +1,21 @@
 #include "../include/Engine.h"
 
+template <LogType Type, typename Func, typename... Args>
+inline void Engine::dispatch(Func&& func, Args&&... args) {
+    if constexpr (toBenchmark){
+        const auto start = Timer::GetTimeNanos();
+        func(std::forward<Args>(args)...);
+        // std::invoke(std::forward<Func>(func), std::forward<Args>(args)...);
+        const auto end = Timer::GetTimeNanos();
+        // logger_->logLatency(Type, end-start);
+    } else {
+        logger_->log<Type>(std::forward<Args>(args)...);
+        // std::invoke(std::forward<Func>(func),std::forward<Args>(args)...);
+        func(std::forward<Args>(args)...);
+    }
+}
+
 void Engine::run(){
-    Timer t;
-    t.StartTimer();
     while (true){
         while (bufferQueue_->isEmpty()){ continue; }
 
@@ -13,8 +26,6 @@ void Engine::run(){
         handleBuffer(bufPtr);
         bufferQueue_->incReadIndex();
     }
-    const auto duration = t.getNanoDuration();
-    std::cout << "Engine duration(s) : " << duration << std::endl;
     logger_->logStop();
 }
 
@@ -40,13 +51,14 @@ void Engine::handleBuffer(const ReadBuffer* bufPtr) {
 
 //if we wanted to turn this into compile time?
 void Engine::handleMessage(const Byte* message,MessageType type){
-    //need to handle the messageHeader which would be total of 5 bytes
     // 1 byte for type, 2 bytes for locate, 2 bytes for tracking num
     switch (type){
         case (MessageType::ADD_ORDER): {
             auto msg = AddOrderMessage::parseMessage(message);
             logger_->logOrderAdd(msg.orderId_, msg.price_, msg.orderQuantity_, msg.side_);
+            const auto start = Timer::GetTimeNanos();
             orderBook_->add(msg.orderId_, msg.side_,msg.price_, msg.orderQuantity_);
+            const auto duration = Timer::GetTimeNanos();
             break;
         }
 

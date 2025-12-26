@@ -4,10 +4,10 @@
 #include "Message.h"
 #include <atomic>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <unordered_map>
 #include <utility>
-
 
 struct ReadBuffer;
 template<typename T> class LFQueue;
@@ -29,6 +29,9 @@ public:
         engineThread = std::thread([this](){run();});
     };
 
+    template<LogType Type, typename Func, typename... Args>
+    inline void dispatch(Func&& func, Args&&... args);
+
     void join(){
         if (engineThread.joinable()){
             engineThread.join();
@@ -48,6 +51,8 @@ public:
 private:
     //we will need some sort of queue
     std::thread engineThread;
+    uint64_t average{};
+    uint64_t count{};
     Logger* logger_;
     std::unique_ptr<Orderbook> orderBook_;
     MemoryPool<RawBuffer>* bufferPool_;

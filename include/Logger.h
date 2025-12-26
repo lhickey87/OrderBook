@@ -71,12 +71,20 @@ struct LogElement {
     } u;
 };
 
+#if BENCHMARK
+    constexpr const char* LOG_FILE = "Benchmarks.log";
+    constexpr bool toBenchmark = true;
+#else
+    constexpr const char* LOG_FILE = "Orderbook.log";
+    constexpr bool toBenchmark = false;
+#endif
+
 using LogQueue = LFQueue<LogElement>;
 
 class Logger {
 public:
     Logger(LFQueue<LogElement>* logQueue) : queue_(logQueue) {
-        logFile_ = std::fopen("orderbook.log", "w");
+        logFile_ = std::fopen(LOG_FILE, "w");
         static char fileBuffer[512 * 1024]; // 512 KB
         setvbuf(logFile_, fileBuffer, _IOFBF, sizeof(fileBuffer));
     }
@@ -95,100 +103,47 @@ public:
         if (logFile_) std::fclose(logFile_);
     }
 
-    void logOrderAdd(OrderId oid, Price price, Quantity quantity, Side side) noexcept {
-        auto logElement = queue_->getWriteElement();
-        // logElement->timestamp = Timer::GetTimeNanos(); // Use your fast timer
-        logElement->type = LogType::ORDER_ADD;
-        logElement->u.orderAdd = {oid,price,quantity,side};
-        queue_->incWriteIndex();
+    template<LogType type, typename... Args>
+    void log(Args&&... args){
+        #if BENCHMARK
+            logLatency(type, std::forward<Args>(args)...);
+        #else
+            if constexpr(type == LogType::ORDER_ADD) logOrderAdd(std::forward<Args>(args)...);
+            else if constexpr (type == LogType::ORDER_DELETE) logOrderDelete(std::forward<Args>(args)...);
+            else if constexpr (type == LogType::ORDER_EXEC) logOrderExec(std::forward<Args>(args)...);
+            else if constexpr (type == LogType::ORDER_FILL) logOrderReduce(std::forward<Args>(args)...);
+            else if constexpr (type == LogType::ORDER_MODIFY) logOrderModify(std::forward<Args>(args)...);
+            else if constexpr (type == LogType::ORDER_REDUCE) logOrderReduce(std::forward<Args>(args)...);
+            else if constexpr (type == LogType::TRADE) logTrade(std::forward<Args>(args)...);
+            else {logStop();}
+        #endif
     }
-
-    void logOrderFill(OrderId orderId, Quantity quantity) noexcept {
-        LogElement* logElement = queue_->getWriteElement();
-        // logElement->timestamp = Timer::GetTimeNanos();
-        logElement->type = LogType::ORDER_FILL;
-        logElement->u.orderReduce = {orderId, quantity};
-        queue_->incWriteIndex();
-    }
-
-    void logOrderReduce(OrderId orderId, Quantity quantity) noexcept {
-        LogElement* logElement = queue_->getWriteElement();
-        // logElement->timestamp = Timer::GetTimeNanos();
-        logElement->type = LogType::ORDER_REDUCE;
-        logElement->u.orderReduce = {orderId, quantity};
-        queue_->incWriteIndex();
-    }
-
-    void logOrderExec(OrderId orderId, Quantity quantity) noexcept {
-        LogElement* logElement = queue_->getWriteElement();
-        // logElement->timestamp = Timer::GetTimeNanos();
-        logElement->type = LogType::ORDER_EXEC;
-        logElement->u.orderExec = {orderId, quantity};
-        queue_->incWriteIndex();
-    }
-
-    void logOrderDelete(OrderId orderId) noexcept {
-        LogElement* logElement = queue_->getWriteElement();
-        // logElement->timestamp = Timer::GetTimeNanos();
-        logElement->type = LogType::ORDER_DELETE;
-        logElement->u.orderDelete = {orderId};
-        queue_->incWriteIndex();
-    }
-
-    void logOrderModify(OrderId oldOrderId, OrderId newOrderId, Quantity quantity, Price price) noexcept {
-        LogElement* logElement = queue_->getWriteElement();
-        // logElement->timestamp = Timer::GetTimeNanos();
-        logElement->type = LogType::ORDER_MODIFY;
-        logElement->u.orderModify = {oldOrderId, newOrderId, quantity, price};
-        queue_->incWriteIndex();
-    }
-
-    void logTrade(Quantity quantity, Price price) noexcept {
-        LogElement* logElement = queue_->getWriteElement();
-        // logElement->timestamp = Timer::GetTimeNanos();
-        logElement->type = LogType::TRADE;
-        logElement->u.trade = {quantity,price};
-        queue_->incWriteIndex();
-    }
-
-    void logStop() noexcept {
-        LogElement* logElement = queue_->getWriteElement();
-        // logElement->timestamp = Timer::GetTimeNanos();
-        logElement->type = LogType::STOP;
-        logElement->u.stop = {"Finished"};
-        queue_->incWriteIndex();
-    }
-
 private:
     LogQueue* queue_; // Queue of pointers
     std::FILE* logFile_;
     std::thread loggerThread_;
 
-    void run() noexcept {
-        std::vector<char> buffer_;
 
-        buffer_.resize(1<<15);
-        while (true){
-            while (queue_->isEmpty()){ continue;}
+    void logOrderAdd(OrderId oid, Price price, Quantity quantity, Side side) noexcept;
 
-            const auto logElement = queue_->getReadElement();
+    void logOrderDelete(OrderId orderId) noexcept;
 
-            if (logElement->type == LogType::STOP)[[unlikely]] {
-                formatWrite(logElement,buffer_);
-                queue_->incReadIndex();
-                break;
-            }
+    void logOrderReduce(OrderId orderId, Quantity quantity) noexcept;
 
-            formatWrite(logElement, buffer_);
-            queue_->incReadIndex();
-        }
-    }
+    void logOrderExec(OrderId orderId, Quantity quantity) noexcept;
+
+    void logOrderModify(OrderId oldOrderId, OrderId newOrderId, Quantity quantity, Price price) noexcept;
+
+    void logTrade(Quantity quantity, Price price) noexcept;
+
+    void logStop() noexcept;
+
+    void run() noexcept;
 
     void writeAdd(const OrderAddLog& orderAdd, std::vector<char>& buffer) noexcept {
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
                                            "ADD ORDER: orderId: %llu, Quantity: %u, Price: %d \n",
                                            orderAdd.orderId, orderAdd.quantity, orderAdd.price);
-
         std::fwrite(buffer.data(),sizeof(Byte), requiredBytes, logFile_);
     }
 
@@ -196,7 +151,6 @@ private:
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
                                            "REDUCE ORDER: orderId: %llu, Shares Reduced: %u \n",
                                            orderReduce.orderId, orderReduce.quantity);
-
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 
@@ -204,7 +158,6 @@ private:
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
                                            "FILL ORDER: orderId: %llu, Shares Reduced: %u \n",
                                            fillLog.orderId, fillLog.quantity);
-
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 
@@ -212,7 +165,6 @@ private:
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
                                            "MODIFY ORDER: Old OrderId: %llu, New OrderId: %llu, New Price: %d, Quantity: %u \n",
                                            modifyLog.oldOrderId, modifyLog.newOrderId, modifyLog.price, modifyLog.quantity);
-
         std::fwrite(buffer.data(),sizeof(Byte), requiredBytes, logFile_);
     }
 
@@ -220,7 +172,6 @@ private:
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
                                            "EXECUTE ORDER: OrderId: %llu, Shares Executed: %u \n",
                                            execLog.orderId, execLog.quantity);
-
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 
@@ -228,7 +179,6 @@ private:
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
                                            "DELETE ORDER: Deleted Order OrderId: %llu \n",
                                            deleteLog.orderId);
-
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 
@@ -236,7 +186,6 @@ private:
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
                                            "TRADE: Quantity: %u, Price: %d \n",
                                            tradeLog.quantity, tradeLog.price);
-
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 

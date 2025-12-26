@@ -3,12 +3,13 @@
 #include <mach/mach.h>
 #include <mach/mach_time.h>
 #include <mutex>
+#include "../include/Logger.h"
 
 class Timer {
 public:
     Timer() { initializeTimeBase(); }
 
-    static uint64_t GetTimeNanos() {
+    static inline uint64_t GetTimeNanos() {
         initializeTimeBase();
         uint64_t raw = mach_absolute_time();
         return (raw * info.numer) / info.denom;
@@ -34,3 +35,7 @@ private:
     inline static mach_timebase_info_data_t info = {0,0};
     uint64_t startTime = 0;
 };
+
+
+
+//type does not need to be stored by benchTimer, instead we will use the index as an entry into BenchTimer Metrics

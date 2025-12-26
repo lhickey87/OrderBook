@@ -41,8 +41,8 @@ public:
         return (writeIndex_.load() == readIndex_.load());
     }
 
-    bool isFull() noexcept {
-        return Size() - 1 == capacity_;
+    bool isFull() const noexcept {
+        return Size() == capacity_ - 1;
     }
 
     LFQueue() = delete;
