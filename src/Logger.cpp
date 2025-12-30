@@ -1,63 +1,84 @@
 #include "../include/Logger.h"
 
-void Logger::logOrderAdd(OrderId oid, Price price, Quantity quantity, Side side) noexcept {
-        auto logElement = queue_->getWriteElement();
-        // logElement->timestamp = Timer::GetTimeNanos(); // Use your fast timer
-        logElement->type = LogType::ORDER_ADD;
-        logElement->u.orderAdd = {oid,price,quantity,side};
-        queue_->incWriteIndex();
-    }
+void Logger::logOrderAdd(const AddOrderMessage& msg) noexcept {
+    auto logElement = queue_->getWriteElement();
+    logElement->type = LogType::ORDER_ADD;
+    logElement->u.orderAdd = {msg.orderId_,msg.price_,msg.orderQuantity_,msg.side_};
+    queue_->incWriteIndex();
+}
 
+void Logger::logOrderAdd(const IdAddOrderMessage& msg) noexcept {
+    auto logElement = queue_->getWriteElement();
+    logElement->type = LogType::ORDER_ADD;
+    logElement->u.orderAdd = {msg.orderId_,msg.price_,msg.orderQuantity_,msg.side_};
+    queue_->incWriteIndex();
+}
 
-void Logger::logOrderReduce(OrderId orderId, Quantity quantity) noexcept {
+void Logger::logOrderReduce(const ReduceOrderMessage& msg) noexcept {
     LogElement* logElement = queue_->getWriteElement();
-    // logElement->timestamp = Timer::GetTimeNanos();
     logElement->type = LogType::ORDER_REDUCE;
-    logElement->u.orderReduce = {orderId, quantity};
+    logElement->u.orderReduce = {msg.orderId_, msg.cancelledShares};
     queue_->incWriteIndex();
 }
 
-
-void Logger::logOrderExec(OrderId orderId, Quantity quantity) noexcept {
+void Logger::logOrderExec(const ExecMessage& msg) noexcept {
     LogElement* logElement = queue_->getWriteElement();
-    // logElement->timestamp = Timer::GetTimeNanos();
     logElement->type = LogType::ORDER_EXEC;
-    logElement->u.orderExec = {orderId, quantity};
+    logElement->u.orderExec = {msg.orderId_, msg.numShares};
     queue_->incWriteIndex();
 }
 
-void Logger::logOrderDelete(OrderId orderId) noexcept {
+void Logger::logOrderExec(const ExecPriceMessage& msg) noexcept {
     LogElement* logElement = queue_->getWriteElement();
-    // logElement->timestamp = Timer::GetTimeNanos();
+    logElement->type = LogType::ORDER_EXEC;
+    logElement->u.orderExec = {msg.orderId_, msg.numShares};
+    queue_->incWriteIndex();
+}
+
+void Logger::logOrderDelete(const DeleteMessage& msg) noexcept {
+    LogElement* logElement = queue_->getWriteElement();
     logElement->type = LogType::ORDER_DELETE;
-    logElement->u.orderDelete = {orderId};
+    logElement->u.orderDelete = {msg.cancelOrderId};
     queue_->incWriteIndex();
 }
 
-void Logger::logOrderModify(OrderId oldOrderId, OrderId newOrderId, Quantity quantity, Price price) noexcept {
+void Logger::logOrderModify(const ReplaceMessage& msg) noexcept {
     LogElement* logElement = queue_->getWriteElement();
-    // logElement->timestamp = Timer::GetTimeNanos();
     logElement->type = LogType::ORDER_MODIFY;
-    logElement->u.orderModify = {oldOrderId, newOrderId, quantity, price};
+    logElement->u.orderModify = {msg.oldOrderId, msg.newOrderId, msg.numShares, msg.newPrice};
     queue_->incWriteIndex();
 }
 
-void Logger::logTrade(Quantity quantity, Price price) noexcept {
+void Logger::logTrade(const TradeMessage& msg) noexcept {
     LogElement* logElement = queue_->getWriteElement();
-    // logElement->timestamp = Timer::GetTimeNanos();
     logElement->type = LogType::TRADE;
-    logElement->u.trade = {quantity,price};
+    logElement->u.trade = {msg.sharesMatched,msg.price_};
     queue_->incWriteIndex();
 }
 
 void Logger::logStop() noexcept {
     LogElement* logElement = queue_->getWriteElement();
-    // logElement->timestamp = Timer::GetTimeNanos();
     logElement->type = LogType::STOP;
     logElement->u.stop = {"Finished"};
     queue_->incWriteIndex();
 }
 
+void Logger::flushCounters() noexcept{
+    char buffer[1024];
+    for (int i =0; i < typeCounter.size(); ++i){
+        const auto& timer = typeCounter[i];
+        const char* type = BENCH::type[i];
+
+        if (timer.totalOps == 0){ continue;}
+
+        const double average = static_cast<double>(timer.totalNanos) / timer.totalOps;
+
+        const int len = std::snprintf(buffer, sizeof(buffer),"Type: %s, Total Operations: %llu Average Latency: %f \n",type, timer.totalOps, average);
+
+        std::fwrite(buffer, sizeof(Byte), len, logFile_);
+    }
+    std::fflush(logFile_);
+}
 
 void Logger::run() noexcept {
     std::vector<char> buffer_;
@@ -69,12 +90,18 @@ void Logger::run() noexcept {
         const auto logElement = queue_->getReadElement();
 
         if (logElement->type == LogType::STOP)[[unlikely]] {
-            LOG(logElement,buffer_);
-            queue_->incReadIndex();
+            #if BENCHMARK
+               flushCounters();
+            #else
+                formatWrite(logElement,buffer_);
+            #endif
             break;
         }
 
-        LOG(logElement, buffer_);
+        #if !BENCHMARK
+        formatWrite(logElement, buffer_);
+        #endif
+
         queue_->incReadIndex();
     }
 }

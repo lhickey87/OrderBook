@@ -2,6 +2,7 @@
 #include "Logger.h"
 #include "Orderbook.h"
 #include "Message.h"
+#include "../Benchmark/Time.h"
 #include <atomic>
 #include <cstdint>
 #include <functional>
@@ -29,8 +30,8 @@ public:
         engineThread = std::thread([this](){run();});
     };
 
-    template<LogType Type, typename Func, typename... Args>
-    inline void dispatch(Func&& func, Args&&... args);
+    template<LogType Type, typename Func, typename T>
+    inline void dispatch(const T& msg, Func&& func);
 
     void join(){
         if (engineThread.joinable()){

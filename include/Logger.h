@@ -2,10 +2,12 @@
 #include <cstdio>
 #include <thread>
 #include <iostream>
+#include "Message.h"
+#include "Order.h"
 #include "threads.h"
 #include "typedefs.h"
 #include "LFQueue.h"
-#include "../Benchmark/Time.h"
+#include "../Benchmark/BenchTimer.h"
 
 struct OrderAddLog {
     OrderId orderId;
@@ -55,7 +57,8 @@ enum class LogType {
     STOP
 };
 
-// 3. The LogElement (The "Union" Wrapper)
+using enum LogType;
+
 struct LogElement {
     uint64_t timestamp;
     LogType type;
@@ -74,9 +77,11 @@ struct LogElement {
 #if BENCHMARK
     constexpr const char* LOG_FILE = "Benchmarks.log";
     constexpr bool toBenchmark = true;
+    constexpr size_t bufferSize = 512;
 #else
     constexpr const char* LOG_FILE = "Orderbook.log";
     constexpr bool toBenchmark = false;
+    constexpr size_t bufferSize = 512*1024;
 #endif
 
 using LogQueue = LFQueue<LogElement>;
@@ -103,93 +108,107 @@ public:
         if (logFile_) std::fclose(logFile_);
     }
 
-    template<LogType type, typename... Args>
-    void log(Args&&... args){
-        #if BENCHMARK
-            logLatency(type, std::forward<Args>(args)...);
-        #else
-            if constexpr(type == LogType::ORDER_ADD) logOrderAdd(std::forward<Args>(args)...);
-            else if constexpr (type == LogType::ORDER_DELETE) logOrderDelete(std::forward<Args>(args)...);
-            else if constexpr (type == LogType::ORDER_EXEC) logOrderExec(std::forward<Args>(args)...);
-            else if constexpr (type == LogType::ORDER_FILL) logOrderReduce(std::forward<Args>(args)...);
-            else if constexpr (type == LogType::ORDER_MODIFY) logOrderModify(std::forward<Args>(args)...);
-            else if constexpr (type == LogType::ORDER_REDUCE) logOrderReduce(std::forward<Args>(args)...);
-            else if constexpr (type == LogType::TRADE) logTrade(std::forward<Args>(args)...);
-            else {logStop();}
-        #endif
+    template<LogType Type>
+    inline void logLatency(uint64_t duration) noexcept {
+        typeCounter[static_cast<size_t>(Type)].record(duration);
     }
+
+    void logOrderAdd(const AddOrderMessage& msg) noexcept;
+
+    void logOrderAdd(const IdAddOrderMessage& msg) noexcept;
+
+    void logOrderDelete(const DeleteMessage& msg) noexcept;
+
+    void logOrderReduce(const ReduceOrderMessage& msg) noexcept;
+
+    void logOrderExec(const ExecMessage& msg) noexcept;
+
+    void logOrderExec(const ExecPriceMessage& msg) noexcept;
+
+    void logOrderModify(const ReplaceMessage& msg) noexcept;
+
+    void logTrade(const TradeMessage& msg) noexcept;
+
+    void logStop() noexcept;
+
+    template<LogType type>
+    void log(){
+        if constexpr (type == STOP){
+            logStop();
+        }
+    }
+
+    template<LogType type, typename T>
+    constexpr void log(const T& msg){
+        if constexpr(type == ORDER_ADD) logOrderAdd(msg);
+        else if constexpr (type == ORDER_DELETE) logOrderDelete(msg);
+        else if constexpr (type == ORDER_EXEC) logOrderExec(msg);
+        else if constexpr (type == ORDER_FILL) logOrderReduce(msg);
+        else if constexpr (type == ORDER_MODIFY) logOrderModify(msg);
+        else if constexpr (type == ORDER_REDUCE) logOrderReduce(msg);
+        else if constexpr (type == TRADE) logTrade(msg);
+    }
+
 private:
     LogQueue* queue_; // Queue of pointers
     std::FILE* logFile_;
     std::thread loggerThread_;
+    TypeCounter typeCounter{};
 
-
-    void logOrderAdd(OrderId oid, Price price, Quantity quantity, Side side) noexcept;
-
-    void logOrderDelete(OrderId orderId) noexcept;
-
-    void logOrderReduce(OrderId orderId, Quantity quantity) noexcept;
-
-    void logOrderExec(OrderId orderId, Quantity quantity) noexcept;
-
-    void logOrderModify(OrderId oldOrderId, OrderId newOrderId, Quantity quantity, Price price) noexcept;
-
-    void logTrade(Quantity quantity, Price price) noexcept;
-
-    void logStop() noexcept;
+    void flushCounters() noexcept;
 
     void run() noexcept;
 
-    void writeAdd(const OrderAddLog& orderAdd, std::vector<char>& buffer) noexcept {
+    inline void writeAdd(const OrderAddLog& orderAdd, std::vector<char>& buffer) noexcept {
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
                                            "ADD ORDER: orderId: %llu, Quantity: %u, Price: %d \n",
                                            orderAdd.orderId, orderAdd.quantity, orderAdd.price);
         std::fwrite(buffer.data(),sizeof(Byte), requiredBytes, logFile_);
     }
 
-    auto writeReduce(const OrderReduceLog& orderReduce, std::vector<char>& buffer) noexcept {
+    inline auto writeReduce(const OrderReduceLog& orderReduce, std::vector<char>& buffer) noexcept {
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
                                            "REDUCE ORDER: orderId: %llu, Shares Reduced: %u \n",
                                            orderReduce.orderId, orderReduce.quantity);
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 
-    void writeFill(const OrderExecLog& fillLog, std::vector<char>& buffer) noexcept {
+    inline void writeFill(const OrderExecLog& fillLog, std::vector<char>& buffer) noexcept {
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
                                            "FILL ORDER: orderId: %llu, Shares Reduced: %u \n",
                                            fillLog.orderId, fillLog.quantity);
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 
-    void writeModify(const OrderModifyLog& modifyLog, std::vector<char>& buffer) noexcept {
+    inline void writeModify(const OrderModifyLog& modifyLog, std::vector<char>& buffer) noexcept {
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
                                            "MODIFY ORDER: Old OrderId: %llu, New OrderId: %llu, New Price: %d, Quantity: %u \n",
                                            modifyLog.oldOrderId, modifyLog.newOrderId, modifyLog.price, modifyLog.quantity);
         std::fwrite(buffer.data(),sizeof(Byte), requiredBytes, logFile_);
     }
 
-    void writeExec(const OrderExecLog& execLog, std::vector<char>& buffer) noexcept {
+    inline void writeExec(const OrderExecLog& execLog, std::vector<char>& buffer) noexcept {
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
                                            "EXECUTE ORDER: OrderId: %llu, Shares Executed: %u \n",
                                            execLog.orderId, execLog.quantity);
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 
-    void writeOrderDelete(const OrderDeleteLog& deleteLog,std::vector<char>& buffer) noexcept {
+    inline void writeOrderDelete(const OrderDeleteLog& deleteLog,std::vector<char>& buffer) noexcept {
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
                                            "DELETE ORDER: Deleted Order OrderId: %llu \n",
                                            deleteLog.orderId);
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 
-    void writeTrade(const TradeLog& tradeLog, std::vector<char>& buffer) noexcept {
+    inline void writeTrade(const TradeLog& tradeLog, std::vector<char>& buffer) noexcept {
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),
                                            "TRADE: Quantity: %u, Price: %d \n",
                                            tradeLog.quantity, tradeLog.price);
         std::fwrite(buffer.data(), sizeof(Byte), requiredBytes, logFile_);
     }
 
-    void writeStop(std::vector<char>& buffer) noexcept {
+    inline void writeStop(std::vector<char>& buffer) noexcept {
         auto requiredBytes = std::snprintf(buffer.data(), buffer.size(),"Trading Day Finished! \n");
         std::fwrite(buffer.data(),sizeof(Byte), requiredBytes, logFile_);
     }
