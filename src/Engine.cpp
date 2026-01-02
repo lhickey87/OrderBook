@@ -1,15 +1,15 @@
 #include "../include/Engine.h"
 
 template <LogType Type, typename Func, typename T>
-inline void Engine::dispatch(const T& msg, Func&& func) {
+void Engine::dispatch(const T& msg, Func&& func) {
     if constexpr (toBenchmark){
         const auto start = Timer::GetTimeNanos();
         func();
         const auto end = Timer::GetTimeNanos();
         logger_->logLatency<Type>(end-start);
     } else {
-        logger_->log<Type>(msg);
         func();
+        logger_->log<Type>(msg);
     }
 }
 
@@ -88,7 +88,7 @@ void Engine::handleMessage(const Byte* message,MessageType type){
         case(MessageType::REPLACE_ORDER): {
             auto msg = ReplaceMessage::parseMessage(message);
             dispatch<ORDER_MODIFY>(msg, [&](){
-                orderBook_->modifyOrder(msg.oldOrderId, msg.newOrderId,msg.newPrice,msg.numShares);});
+            orderBook_->modifyOrder(msg.oldOrderId, msg.newOrderId,msg.newPrice,msg.numShares);});
             break;
         }
 

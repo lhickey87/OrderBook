@@ -2,8 +2,8 @@
 #include "../include/Logger.h"
 
 namespace BENCH {
-    constexpr std::array<const char*, 7> type = {
-        "Add Order", "Order Delete", "Order Fill", "Order Reduce", "Order Modify", "Execute Order", "Trade"
+    constexpr std::array<const char*, 8> type = {
+        "Add Order", "Order Delete", "Order Fill", "Order Reduce", "Order Modify", "Execute Order", "Trade", "STOP"
     };
 }
 
